@@ -1,11 +1,12 @@
-import google.genai as genai
+from openai import OpenAI
 import streamlit as st
 from PyPDF2 import PdfReader
 
 st.set_page_config(page_title="Asisten Pengajar AI", page_icon="🎓")
 st.title("🎓 Asisten Pengajar AI")
 st.write(
-    "Silakan tanyakan soal atau materi perkuliahan di bawah ini. Jawaban akan langsung bersumber dari materi PDF."
+    "Silakan tanyakan soal atau materi perkuliahan di bawah ini. Jawaban akan"
+    " langsung bersumber dari materi PDF."
 )
 
 with st.sidebar:
@@ -61,18 +62,23 @@ if user_query:
         """
 
         try:
-            client = genai.Client(api_key=api_key)
+            # Menggunakan OpenAI Client yang dihubungkan ke server Gemini
+            client = OpenAI(
+                api_key=api_key,
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            )
 
             with st.chat_message("assistant"):
                 with st.spinner("Mencari jawaban dari materi..."):
-                    response = client.models.generate_content(
+                    response = client.chat.completions.create(
                         model="gemini-1.5-flash",
-                        contents=prompt,
+                        messages=[{"role": "user", "content": prompt}],
                     )
-                    st.write(response.text)
+                    answer = response.choices[0].message.content
+                    st.write(answer)
 
             st.session_state.messages.append(
-                {"role": "assistant", "content": response.text}
+                {"role": "assistant", "content": answer}
             )
         except Exception as e:
             st.error(f"Terjadi kesalahan: {e}")

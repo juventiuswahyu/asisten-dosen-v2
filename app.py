@@ -63,10 +63,17 @@ if user_query:
         try:
             client = genai.Client(api_key=api_key)
 
+            # Cari otomatis model aktif yang mendukung generateContent
+            active_model = "gemini-2.0-flash"
+            for m in client.models.list():
+                if "flash" in m.name:
+                    active_model = m.name
+                    break
+
             with st.chat_message("assistant"):
                 with st.spinner("Mencari jawaban dari materi..."):
                     response = client.models.generate_content(
-                        model="gemini-1.5-flash",
+                        model=active_model,
                         contents=prompt,
                     )
                     st.write(response.text)

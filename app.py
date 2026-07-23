@@ -1,4 +1,4 @@
-from openai import OpenAI
+from groq import Groq
 import streamlit as st
 from PyPDF2 import PdfReader
 
@@ -11,7 +11,7 @@ st.write(
 
 with st.sidebar:
     st.header("⚙️ Panel Dosen")
-    api_key = st.text_input("Masukkan Gemini API Key Anda:", type="password")
+    api_key = st.text_input("Masukkan Groq API Key Anda:", type="password")
     uploaded_files = st.file_uploader(
         "Unggah PDF Materi Kuliah:", type=["pdf"], accept_multiple_files=True
     )
@@ -36,9 +36,7 @@ user_query = st.chat_input("Ketik pertanyaan atau soal di sini...")
 
 if user_query:
     if not api_key:
-        st.error(
-            "⚠️ Masukkan Gemini API Key di menu sebelah kiri terlebih dahulu!"
-        )
+        st.error("⚠️ Masukkan Groq API Key di menu sebelah kiri terlebih dahulu!")
     elif not context_text:
         st.warning("⚠️ Dosen belum mengunggah berkas PDF materi kuliah.")
     else:
@@ -56,24 +54,21 @@ if user_query:
         
         Aturan:
         1. Jika jawaban TIDAK ADA di dalam bahan ajar di atas, katakan dengan sopan: 'Maaf, materi tersebut tidak ditemukan dalam bahan ajar yang diunggah oleh Dosen.'
-        2. Berikan penjelasan yang rinci dan mudah dipahami.
+        2. Berikan penjelasan yang rinci dan mudah dipahami dalam Bahasa Indonesia.
         
         Pertanyaan: {user_query}
         """
 
         try:
-            client = OpenAI(
-                api_key=api_key,
-                base_url="https://generativelanguage.googleapis.com/v1beta/openai",
-            )
+            client = Groq(api_key=api_key)
 
             with st.chat_message("assistant"):
                 with st.spinner("Mencari jawaban dari materi..."):
-                    response = client.chat.completions.create(
-                        model="gemini-2.0-flash",
+                    chat_completion = client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
+                        model="llama-3.3-70b-versatile",
                     )
-                    answer = response.choices[0].message.content
+                    answer = chat_completion.choices[0].message.content
                     st.write(answer)
 
             st.session_state.messages.append(

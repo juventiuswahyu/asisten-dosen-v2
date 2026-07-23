@@ -62,16 +62,15 @@ if user_query:
         """
 
         try:
-            # Menggunakan OpenAI Client yang dihubungkan ke server Gemini
             client = OpenAI(
                 api_key=api_key,
-                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai",
             )
 
             with st.chat_message("assistant"):
                 with st.spinner("Mencari jawaban dari materi..."):
                     response = client.chat.completions.create(
-                        model="gemini-1.5-flash",
+                        model="gemini-2.0-flash",
                         messages=[{"role": "user", "content": prompt}],
                     )
                     answer = response.choices[0].message.content

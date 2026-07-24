@@ -25,7 +25,7 @@ def get_image_base64(image_path):
 img_b64 = get_image_base64("foto_dosen.png")
 img_src = f"data:image/png;base64,{img_b64}" if img_b64 else ""
 
-# 2. Custom CSS (Chat Bubbles, Header & Footer Hak Cipta)
+# 2. Custom CSS
 st.markdown(
     """
     <style>
@@ -141,20 +141,24 @@ avatar_bot = "foto_dosen.png" if os.path.exists("foto_dosen.png") else "🤖"
 label_bot = '<span style="color: #1e3c72; font-weight: bold; font-size: 1.05rem;">Asisten Pak Juven</span>'
 label_user = '<span style="color: #555555; font-weight: bold;">Mahasiswa</span>'
 
-# --- FITUR 1: PILIHAN PERTANYAAN CEPAT (QUICK SUGGESTIONS) ---
-st.markdown(
-    "**💡 Contoh Pertanyaan Cepat:**", help="Klik tombol untuk langsung bertanya"
-)
-col1, col2, col3 = st.columns(3)
+# --- HEADLINE CONTROLS & TOMBOL RESET ---
+col_title, col_reset = st.columns([3, 1])
+with col_title:
+    st.markdown("**💡 Contoh Pertanyaan Cepat:**")
+with col_reset:
+    # FITUR RESET CHAT
+    if st.button("🔄 Reset Chat", type="secondary", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
 
+# --- FITUR: PILIHAN PERTANYAAN CEPAT ---
+col1, col2, col3 = st.columns(3)
 prompt_to_submit = None
 
 if col1.button("📌 Apa itu Pemasaran?", use_container_width=True):
     prompt_to_submit = "Apa definisi dan konsep utama Pemasaran menurut Bahan Ajar?"
 if col2.button("💡 Bauran Pemasaran (4P)", use_container_width=True):
-    prompt_to_submit = (
-        "Jelaskan tentang Bauran Pemasaran (Marketing Mix) 4P!"
-    )
+    prompt_to_submit = "Jelaskan tentang Bauran Pemasaran (Marketing Mix) 4P!"
 if col3.button("🎯 Perencanaan Strategis", use_container_width=True):
     prompt_to_submit = "Bagaimana proses perencanaan strategis pemasaran?"
 
@@ -172,9 +176,7 @@ for msg in st.session_state.messages:
             st.write(msg["content"])
 
 # Form Input Manual
-user_input = st.chat_input(
-    "Tanyakan sesuatu tentang materi perkuliahan Pemasaran..."
-)
+user_input = st.chat_input("Tanyakan sesuatu tentang materi perkuliahan Pemasaran...")
 
 # Prioritaskan input dari tombol cepat jika ada
 if prompt_to_submit:
@@ -192,9 +194,7 @@ if user_query:
         st.warning("⚠️ Belum ada file PDF materi di repository.")
     else:
         # Tampilkan Pesan Mahasiswa
-        st.session_state.messages.append(
-            {"role": "user", "content": user_query}
-        )
+        st.session_state.messages.append({"role": "user", "content": user_query})
         with st.chat_message("user", avatar="🧑‍🎓"):
             st.markdown(label_user, unsafe_allow_html=True)
             st.write(user_query)
@@ -245,26 +245,23 @@ if user_query:
                 )
                 full_response = chat_completion.choices[0].message.content
 
-                # --- FITUR 4: EFEK KETIK OTOMATIS (STREAMING) ---
+                # EFEK KETIK OTOMATIS (STREAMING)
                 message_placeholder = st.empty()
                 displayed_text = ""
 
-                # Mengetik per kelompok kata agar responsif & alami
                 words_list = full_response.split(" ")
                 for i, word in enumerate(words_list):
                     displayed_text += word + " "
                     message_placeholder.markdown(displayed_text + "▌")
-                    time.sleep(0.02)  # Kecepatan ketik
+                    time.sleep(0.02)
 
                 message_placeholder.markdown(full_response)
 
-            st.session_state.messages.append(
-                {"role": "assistant", "content": full_response}
-            )
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
         except Exception as e:
             st.error(f"Terjadi kesalahan: {e}")
 
-# --- FITUR HAK CIPTA & HAK AKSES (FOOTER) ---
+# FOOTER HAK CIPTA
 st.markdown(
     """
     <div class="custom-footer">

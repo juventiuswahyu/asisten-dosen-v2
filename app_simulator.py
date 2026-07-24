@@ -77,6 +77,14 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# Initialize Session State untuk reset
+if "analyzed" not in st.session_state:
+    st.session_state.analyzed = False
+if "response" not in st.session_state:
+    st.session_state.response = ""
+if "user_data" not in st.session_state:
+    st.session_state.user_data = {}
+
 # 3. Header Hero Banner
 st.markdown(
     """
@@ -122,7 +130,8 @@ with st.form("business_form"):
     deskripsi = st.text_area(
         "Jelaskan Ide Bisnismu Secara Singkat",
         placeholder=(
-            "Apa yang kamu jual? Siapa target pembelinya? Apa keunggulannya dibanding pesaing?"
+            "Apa yang kamu jual? Siapa target pembelinya? Apa keunggulannya"
+            " dibanding pesaing?"
         ),
         height=100,
     )
@@ -164,50 +173,59 @@ if submit_btn:
                     messages=[{"role": "user", "content": prompt}],
                     model="llama-3.1-8b-instant",
                 )
-                response = chat_completion.choices[0].message.content
+                res_text = chat_completion.choices[0].message.content
 
-            st.balloons()  # Efek animasi balon perayaan
-
-            # Tampilan Hasil Evaluasi
-            st.markdown(
-                f"""
-                <div class="eval-card">
-                    <h3 style="color: #1e3a8a; margin-top:0;">📊 Laporan Evaluasi Bisnis: {nama_bisnis}</h3>
-                    <p><b>Calon Innovator:</b> {nama} ({sekolah})</p>
-                    <hr>
-                </div>
-            """,
-                unsafe_allow_html=True,
-            )
-
-            # Menampilkan hasil AI per kata secara streaming
-            message_placeholder = st.empty()
-            displayed_text = ""
-            words = response.split(" ")
-            for word in words:
-                displayed_text += word + " "
-                message_placeholder.markdown(displayed_text + "▌")
-                time.sleep(0.01)
-            message_placeholder.markdown(response)
-
-            # 6. BANNER PROMOSI & CONVERSION (Call to Action)
-            st.markdown(
-                """
-                <div class="cta-box">
-                    <h3 style="color: #1e3a8a; margin-bottom: 0.5rem;">🎓 Ingin Ide Bisnis Ini Jadi Nyata?</h3>
-                    <p style="color: #475569; font-size: 0.95rem;">
-                        Di <b>Prodi Manajemen</b>, kamu akan dibimbing langsung oleh dosen ahli dan praktisi bisnis untuk mengeksekusi ide ini hingga menghasilkan profit nyata!
-                    </p>
-                    <a href="https://wa.me/6281234567890" target="_blank" class="cta-button">
-                        📲 Konsultasi Pendaftaran via WhatsApp
-                    </a>
-                </div>
-            """,
-                unsafe_allow_html=True,
-            )
+            st.session_state.analyzed = True
+            st.session_state.response = res_text
+            st.session_state.user_data = {
+                "nama": nama,
+                "sekolah": sekolah,
+                "nama_bisnis": nama_bisnis,
+            }
+            st.balloons()
 
         except Exception as e:
             st.error(f"Terjadi kesalahan: {e}")
+
+# 6. Menampilkan Hasil Evaluasi & Tombol Reset
+if st.session_state.analyzed:
+    st.markdown(
+        f"""
+        <div class="eval-card">
+            <h3 style="color: #1e3a8a; margin-top:0;">📊 Laporan Evaluasi Bisnis: {st.session_state.user_data.get('nama_bisnis')}</h3>
+            <p><b>Calon Innovator:</b> {st.session_state.user_data.get('nama')} ({st.session_state.user_data.get('sekolah')})</p>
+            <hr>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(st.session_state.response)
+
+    # BANNER PROMOSI & CONVERSION (Call to Action)
+    st.markdown(
+        """
+        <div class="cta-box">
+            <h3 style="color: #1e3a8a; margin-bottom: 0.5rem;">🎓 Ingin Ide Bisnis Ini Jadi Nyata?</h3>
+            <p style="color: #475569; font-size: 0.95rem;">
+                Di <b>Prodi Manajemen</b>, kamu akan dibimbing langsung oleh dosen ahli dan praktisi bisnis untuk mengeksekusi ide ini hingga menghasilkan profit nyata!
+            </p>
+            <a href="https://wa.me/6281234567890" target="_blank" class="cta-button">
+                📲 Konsultasi Pendaftaran via WhatsApp
+            </a>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # TOMBOL RESET FORM / ULANGI ANALISIS
+    if st.button("🔄 Uji Ide Bisnis Lain / Reset Form", use_container_width=True):
+        st.session_state.analyzed = False
+        st.session_state.response = ""
+        st.session_state.user_data = {}
+        st.rerun()
 
 # Footer
 st.markdown(

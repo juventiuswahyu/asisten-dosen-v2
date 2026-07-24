@@ -109,14 +109,18 @@ if "messages" not in st.session_state:
 # Avatar bot menggunakan foto_dosen.png
 avatar_bot = "foto_dosen.png" if os.path.exists("foto_dosen.png") else "🤖"
 
+# Label Nama Berwarna
+label_bot = '<span style="color: #1e3c72; font-weight: bold; font-size: 1.05rem;">Asisten Pak Juven</span>'
+label_user = '<span style="color: #555555; font-weight: bold;">Mahasiswa</span>'
+
 for msg in st.session_state.messages:
     if msg["role"] == "user":
         with st.chat_message("user", avatar="🧑‍🎓"):
-            st.markdown("**Mahasiswa**")
+            st.markdown(label_user, unsafe_allow_html=True)
             st.write(msg["content"])
     else:
         with st.chat_message("assistant", avatar=avatar_bot):
-            st.markdown("**Asisten Pak Juven**")
+            st.markdown(label_bot, unsafe_allow_html=True)
             st.write(msg["content"])
 
 # 7. Form Input Pertanyaan Mahasiswa
@@ -133,7 +137,7 @@ if user_query:
             {"role": "user", "content": user_query}
         )
         with st.chat_message("user", avatar="🧑‍🎓"):
-            st.markdown("**Mahasiswa**")
+            st.markdown(label_user, unsafe_allow_html=True)
             st.write(user_query)
 
         # Pencarian Kata Kunci Relevan
@@ -172,9 +176,9 @@ if user_query:
         try:
             client = Groq(api_key=api_key)
 
-            # Tampilkan pesan Asisten AI dengan Label "Asisten Pak Juven"
+            # Tampilkan pesan Asisten AI dengan Label Biru "Asisten Pak Juven"
             with st.chat_message("assistant", avatar=avatar_bot):
-                st.markdown("**Asisten Pak Juven**")
+                st.markdown(label_bot, unsafe_allow_html=True)
                 with st.spinner("Sedang menganalisis bahan ajar..."):
                     chat_completion = client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],

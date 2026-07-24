@@ -1,5 +1,5 @@
-import os
 import base64
+import os
 from groq import Groq
 from PyPDF2 import PdfReader
 import streamlit as st
@@ -7,10 +7,11 @@ import streamlit as st
 # 1. Konfigurasi Halaman Web
 st.set_page_config(
     page_title="Asisten Dosen AI",
-    page_icon="foto_dosen.png",  # Menggunakan file .png Bapak
+    page_icon="foto_dosen.png",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
+
 
 # Fungsi untuk membaca foto .png lokal dan mengonversinya ke Base64
 def get_image_base64(image_path):
@@ -18,6 +19,7 @@ def get_image_base64(image_path):
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
     return ""
+
 
 img_b64 = get_image_base64("foto_dosen.png")
 img_src = f"data:image/png;base64,{img_b64}" if img_b64 else ""
@@ -61,7 +63,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 3. Banner Utama dengan Foto Profil Bapak
+# 3. Banner Utama
 st.markdown(
     f"""
     <div class="header-container">
@@ -69,7 +71,7 @@ st.markdown(
             <img src="{img_src}" style="width: 120px; height: 120px; border-radius: 50%; border: 3.5px solid white; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
         </div>
         <div class="header-title">🎓 Asisten Akademik AI</div>
-        <div class="header-subtitle">Tanyakan hal terkait materi perkuliahan, tugas, atau konsep bahan ajar.</div>
+        <div class="header-subtitle">Tanyakan materi perkuliahan dan konsep Pemasaran pada Bahan Ajar.</div>
         <div class="status-badge">⚡ Powered by Groq AI • Aktif 24/7</div>
     </div>
 """,
@@ -108,9 +110,14 @@ if "messages" not in st.session_state:
 avatar_bot = "foto_dosen.png" if os.path.exists("foto_dosen.png") else "🤖"
 
 for msg in st.session_state.messages:
-    avatar_img = "🧑‍🎓" if msg["role"] == "user" else avatar_bot
-    with st.chat_message(msg["role"], avatar=avatar_img):
-        st.write(msg["content"])
+    if msg["role"] == "user":
+        with st.chat_message("user", avatar="🧑‍🎓"):
+            st.markdown("**Mahasiswa**")
+            st.write(msg["content"])
+    else:
+        with st.chat_message("assistant", avatar=avatar_bot):
+            st.markdown("**Asisten Pak Juven**")
+            st.write(msg["content"])
 
 # 7. Form Input Pertanyaan Mahasiswa
 user_query = st.chat_input("Tanyakan sesuatu tentang materi perkuliahan...")
@@ -126,6 +133,7 @@ if user_query:
             {"role": "user", "content": user_query}
         )
         with st.chat_message("user", avatar="🧑‍🎓"):
+            st.markdown("**Mahasiswa**")
             st.write(user_query)
 
         # Pencarian Kata Kunci Relevan
@@ -146,7 +154,7 @@ if user_query:
             selected_context = selected_context[:20000]
 
         prompt = f"""
-        Kamu adalah Asisten Pengajar AI yang ramah, profesional, dan akademis.
+        Kamu adalah Asisten Pengajar AI dari Pak Juven yang ramah, profesional, dan akademis.
         Jawablah pertanyaan mahasiswa berdasarkan Bahan Ajar berikut:
         
         === BAHAN AJAR ===
@@ -164,8 +172,9 @@ if user_query:
         try:
             client = Groq(api_key=api_key)
 
-            # Tampilkan pesan Asisten AI menggunakan FOTO BAPAK sebagai Avatar
+            # Tampilkan pesan Asisten AI dengan Label "Asisten Pak Juven"
             with st.chat_message("assistant", avatar=avatar_bot):
+                st.markdown("**Asisten Pak Juven**")
                 with st.spinner("Sedang menganalisis bahan ajar..."):
                     chat_completion = client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],

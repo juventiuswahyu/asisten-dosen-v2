@@ -13,15 +13,15 @@ st.write(
     " otomatis diambil dari bahan ajar."
 )
 
-# 1. Ambil API Key dari Streamlit Secrets
-api_key = st.secrets.get("GROQ_API_KEY")
+# 1. API Key langsung diintegrasikan di dalam kode
+api_key = st.secrets["GROQ_API_KEY"]
 
 
 # 2. Fungsi untuk membaca semua PDF yang ada di repository secara otomatis
 @st.cache_resource
 def load_all_pdfs():
     pdf_text = ""
-    # Mencari semua file .pdf di folder utama repository
+    # Mencari semua file .pdf di folder utama repository GitHub
     for file in os.listdir("."):
         if file.endswith(".pdf"):
             try:
@@ -52,10 +52,7 @@ user_query = st.chat_input("Ketik pertanyaan materi kuliah di sini...")
 
 if user_query:
     if not api_key:
-        st.error(
-            "⚠️ API Key belum dikonfigurasi di Streamlit Secrets. Silakan tambahkan"
-            " GROQ_API_KEY."
-        )
+        st.error("⚠️ API Key belum terpasang.")
     elif not context_text:
         st.warning(
             "⚠️ Belum ada file PDF materi di repository GitHub. Silakan upload"
@@ -69,7 +66,7 @@ if user_query:
         with st.chat_message("user"):
             st.write(user_query)
 
-        # Fitur Pencarian Kata Kunci Sederhana
+        # Fitur Pencarian Kata Kunci Sederhana untuk Efisiensi Token
         words = user_query.lower().split()
         paragraphs = context_text.split("\n\n")
         relevant_paragraphs = []

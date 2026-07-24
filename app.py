@@ -1,4 +1,5 @@
 import os
+import base64
 from groq import Groq
 from PyPDF2 import PdfReader
 import streamlit as st
@@ -6,24 +7,33 @@ import streamlit as st
 # 1. Konfigurasi Halaman Web
 st.set_page_config(
     page_title="Asisten Dosen AI",
-    page_icon="🎓",
+    page_icon="foto_dosen.jpg",  # Foto Bapak jadi Icon/Favicon di Tab Browser
     layout="centered",
     initial_sidebar_state="collapsed",
 )
 
-# 2. Custom CSS untuk mempercantik Tampilan (UI)
+# Fungsi pembantu untuk mengubah foto lokal menjadi format Base64 (agar bisa dibaca HTML)
+def get_image_base64(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    return ""
+
+img_b64 = get_image_base64("foto_dosen.jpg")
+img_src = f"data:image/jpeg;base64,{img_b64}" if img_b64 else "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+
+# 2. Custom CSS untuk Tampilan Modern
 st.markdown(
     """
     <style>
-    /* Sembunyikan Header dan Footer Bawaan Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Styling Banner Header */
+    /* Header Container */
     .header-container {
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        padding: 2.5rem;
+        padding: 2rem;
         border-radius: 16px;
         color: white;
         text-align: center;
@@ -31,17 +41,14 @@ st.markdown(
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
     .header-title {
-        font-size: 2.2rem;
+        font-size: 2rem;
         font-weight: 700;
-        margin-bottom: 0.5rem;
+        margin-top: 0.5rem;
     }
     .header-subtitle {
-        font-size: 1rem;
+        font-size: 0.95rem;
         opacity: 0.9;
-        font-weight: 300;
     }
-
-    /* Styling Badge Status */
     .status-badge {
         display: inline-block;
         background-color: rgba(255, 255, 255, 0.2);
@@ -55,10 +62,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 3. Tampilan Header Utama
+# 3. Banner Utama dengan Foto Bapak
 st.markdown(
-    """
+    f"""
     <div class="header-container">
+        <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
+            <img src="{img_src}" style="width: 110px; height: 110px; border-radius: 50%; border: 3px solid white; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+        </div>
         <div class="header-title">🎓 Asisten Akademik AI</div>
         <div class="header-subtitle">Tanyakan hal terkait materi perkuliahan, tugas, atau konsep bahan ajar.</div>
         <div class="status-badge">⚡ Powered by Groq AI • Aktif 24/7</div>
@@ -71,7 +81,7 @@ st.markdown(
 api_key = st.secrets.get("GROQ_API_KEY")
 
 
-# 5. Fungsi untuk membaca semua PDF di repository
+# 5. Fungsi Membaca PDF
 @st.cache_resource
 def load_all_pdfs():
     pdf_text = ""
@@ -88,40 +98,38 @@ def load_all_pdfs():
     return pdf_text
 
 
-# Load materi otomatis di awal
 with st.spinner("🔍 Memuat bahan ajar perkuliahan..."):
     context_text = load_all_pdfs()
 
-# 6. Riwayat Percakapan Chat
+# 6. Riwayat Percakapan
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Tampilkan pesan yang tersimpan di memori
+# Tampilkan pesan sebelumnya dengan foto Bapak sebagai Avatar Asisten
+avatar_bot = "foto_dosen.jpg" if os.path.exists("foto_dosen.jpg") else "🤖"
+
 for msg in st.session_state.messages:
-    avatar = "🧑‍🎓" if msg["role"] == "user" else "🤖"
-    with st.chat_message(msg["role"], avatar=avatar):
+    avatar_img = "🧑‍🎓" if msg["role"] == "user" else avatar_bot
+    with st.chat_message(msg["role"], avatar=avatar_img):
         st.write(msg["content"])
 
-# 7. Form Input Pertanyaan
+# 7. Form Input Pertanyaan Mahasiswa
 user_query = st.chat_input("Tanyakan sesuatu tentang materi perkuliahan...")
 
 if user_query:
     if not api_key:
-        st.error(
-            "⚠️ API Key belum terkonfigurasi. Pastikan GROQ_API_KEY ada di"
-            " Secrets."
-        )
+        st.error("⚠️ GROQ_API_KEY belum dikonfigurasi di Streamlit Secrets.")
     elif not context_text:
-        st.warning("⚠️ Belum ada file PDF materi perkuliahan di server.")
+        st.warning("⚠️ Belum ada file PDF materi di repository.")
     else:
-        # Tampilkan pertanyaan user
+        # Tampilkan pesan Mahasiswa
         st.session_state.messages.append(
             {"role": "user", "content": user_query}
         )
         with st.chat_message("user", avatar="🧑‍🎓"):
             st.write(user_query)
 
-        # Fitur Pencarian Kata Kunci Relevan
+        # Pencarian Kata Kunci
         words = user_query.lower().split()
         paragraphs = context_text.split("\n\n")
         relevant_paragraphs = []
@@ -139,7 +147,7 @@ if user_query:
             selected_context = selected_context[:20000]
 
         prompt = f"""
-        Kamu adalah Asisten Pengajar AI yang profesional, ramah, dan akademis.
+        Kamu adalah Asisten Pengajar AI yang ramah, profesional, dan akademis.
         Jawablah pertanyaan mahasiswa berdasarkan Bahan Ajar berikut:
         
         === BAHAN AJAR ===
@@ -148,9 +156,8 @@ if user_query:
         
         Aturan Jawaban:
         1. Jawab HANYA berdasarkan Bahan Ajar di atas.
-        2. Jika jawaban tidak ada di Bahan Ajar, katakan dengan sopan: 'Maaf, materi tersebut tidak ditemukan dalam bahan ajar perkuliahan.'
-        3. Gunakan Bahasa Indonesia yang rapi, profesional, dan mudah dipahami.
-        4. Gunakan poin-poin (bullet points) jika penjelasan membutuhkan daftar agar lebih mudah dibaca.
+        2. Jika tidak ada di bahan ajar, katakan dengan sopan: 'Maaf, materi tersebut tidak ditemukan dalam bahan ajar perkuliahan.'
+        3. Gunakan Bahasa Indonesia yang baik dan poin-poin jika diperlukan.
         
         Pertanyaan Mahasiswa: {user_query}
         """
@@ -158,7 +165,8 @@ if user_query:
         try:
             client = Groq(api_key=api_key)
 
-            with st.chat_message("assistant", avatar="🤖"):
+            # Tampilkan pesan Asisten AI menggunakan FOTO BAPAK sebagai Avatar
+            with st.chat_message("assistant", avatar=avatar_bot):
                 with st.spinner("Sedang menganalisis bahan ajar..."):
                     chat_completion = client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
@@ -171,4 +179,4 @@ if user_query:
                 {"role": "assistant", "content": answer}
             )
         except Exception as e:
-            st.error(f"Terjadi kesalahan pada sistem: {e}")
+            st.error(f"Terjadi kesalahan: {e}")

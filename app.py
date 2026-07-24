@@ -146,12 +146,11 @@ col_title, col_reset = st.columns([3, 1])
 with col_title:
     st.markdown("**💡 Contoh Pertanyaan Cepat:**")
 with col_reset:
-    # FITUR RESET CHAT
     if st.button("🔄 Reset Chat", type="secondary", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-# --- FITUR: PILIHAN PERTANYAAN CEPAT ---
+# --- PILIHAN PERTANYAAN CEPAT ---
 col1, col2, col3 = st.columns(3)
 prompt_to_submit = None
 
@@ -178,7 +177,6 @@ for msg in st.session_state.messages:
 # Form Input Manual
 user_input = st.chat_input("Tanyakan sesuatu tentang materi perkuliahan Pemasaran...")
 
-# Prioritaskan input dari tombol cepat jika ada
 if prompt_to_submit:
     user_query = prompt_to_submit
 elif user_input:
@@ -193,7 +191,6 @@ if user_query:
     elif not context_text:
         st.warning("⚠️ Belum ada file PDF materi di repository.")
     else:
-        # Tampilkan Pesan Mahasiswa
         st.session_state.messages.append({"role": "user", "content": user_query})
         with st.chat_message("user", avatar="🧑‍🎓"):
             st.markdown(label_user, unsafe_allow_html=True)
@@ -209,12 +206,9 @@ if user_query:
                 relevant_paragraphs.append(p)
 
         if relevant_paragraphs:
-            selected_context = "\n".join(relevant_paragraphs[:10])
+            selected_context = "\n".join(relevant_paragraphs[:5])  # Dibatasi 5 paragraf agar hemat token
         else:
-            selected_context = context_text[:15000]
-
-        if len(selected_context) > 20000:
-            selected_context = selected_context[:20000]
+            selected_context = context_text[:4000]  # Dibatasi 4.000 karakter
 
         prompt = f"""
         Kamu adalah Asisten Pengajar AI dari Pak Juven yang ramah, profesional, dan akademis.
@@ -238,28 +232,42 @@ if user_query:
             with st.chat_message("assistant", avatar=avatar_bot):
                 st.markdown(label_bot, unsafe_allow_html=True)
 
-                # Dapatkan respons dari Groq AI
-                chat_completion = client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt}],
-                    model="llama-3.1-8b-instant",
-                )
-                full_response = chat_completion.choices[0].message.content
+                # Penanganan Otomatis jika Kena Batas Limit (Rate Limit Handling)
+                full_response = None
+                with st.spinner("Sedang menganalisis bahan ajar..."):
+                    for attempt in range(3):
+                        try:
+                            chat_completion = client.chat.completions.create(
+                                messages=[{"role": "user", "content": prompt}],
+                                model="llama-3.1-8b-instant",
+                            )
+                            full_response = chat_completion.choices[0].message.content
+                            break
+                        except Exception as e:
+                            if "429" in str(e) and attempt < 2:
+                                time.sleep(4)  # Tunggu 4 detik lalu coba lagi otomatis
+                            else:
+                                raise e
 
-                # EFEK KETIK OTOMATIS (STREAMING)
-                message_placeholder = st.empty()
-                displayed_text = ""
+                if full_response:
+                    # EFEK KETIK OTOMATIS
+                    message_placeholder = st.empty()
+                    displayed_text = ""
 
-                words_list = full_response.split(" ")
-                for i, word in enumerate(words_list):
-                    displayed_text += word + " "
-                    message_placeholder.markdown(displayed_text + "▌")
-                    time.sleep(0.02)
+                    words_list = full_response.split(" ")
+                    for i, word in enumerate(words_list):
+                        displayed_text += word + " "
+                        message_placeholder.markdown(displayed_text + "▌")
+                        time.sleep(0.015)
 
-                message_placeholder.markdown(full_response)
+                    message_placeholder.markdown(full_response)
+                    st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
         except Exception as e:
-            st.error(f"Terjadi kesalahan: {e}")
+            if "429" in str(e):
+                st.warning("⏳ Server sedang memproses banyak permintaan. Mohon tunggu 5 detik lalu coba klik/tanya kembali.")
+            else:
+                st.error(f"Terjadi kesalahan: {e}")
 
 # FOOTER HAK CIPTA
 st.markdown(

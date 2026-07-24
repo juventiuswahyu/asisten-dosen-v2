@@ -1,5 +1,6 @@
 import base64
 import os
+import time
 from groq import Groq
 from PyPDF2 import PdfReader
 import streamlit as st
@@ -24,7 +25,7 @@ def get_image_base64(image_path):
 img_b64 = get_image_base64("foto_dosen.png")
 img_src = f"data:image/png;base64,{img_b64}" if img_b64 else ""
 
-# 2. Custom CSS Tampilan Modern
+# 2. Custom CSS (Chat Bubbles, Header & Footer Hak Cipta)
 st.markdown(
     """
     <style>
@@ -32,13 +33,14 @@ st.markdown(
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
+    /* Banner Header */
     .header-container {
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         padding: 2.2rem 1.5rem;
         border-radius: 16px;
         color: white;
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
     .header-title {
@@ -57,6 +59,34 @@ st.markdown(
         border-radius: 20px;
         font-size: 0.85rem;
         margin-top: 1rem;
+    }
+
+    /* Footer Hak Cipta */
+    .custom-footer {
+        text-align: center;
+        color: #777777;
+        font-size: 0.82rem;
+        margin-top: 3rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    /* Efek Chat Bubble */
+    [data-testid="stChatMessage"] {
+        border-radius: 12px;
+        padding: 0.8rem 1.2rem;
+        margin-bottom: 0.8rem;
+    }
+    /* Chat Asisten (Kiri/Putih) */
+    [data-testid="stChatMessage"]:nth-child(even) {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    /* Chat Mahasiswa (Kanan/Aksen Biru Muda) */
+    [data-testid="stChatMessage"]:nth-child(odd) {
+        background-color: #f0f4f9;
+        border: 1px solid #d0dbe7;
     }
     </style>
 """,
@@ -106,13 +136,31 @@ with st.spinner("🔍 Memuat bahan ajar perkuliahan..."):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Avatar bot menggunakan foto_dosen.png
+# Avatar bot
 avatar_bot = "foto_dosen.png" if os.path.exists("foto_dosen.png") else "🤖"
-
-# Label Nama Berwarna
 label_bot = '<span style="color: #1e3c72; font-weight: bold; font-size: 1.05rem;">Asisten Pak Juven</span>'
 label_user = '<span style="color: #555555; font-weight: bold;">Mahasiswa</span>'
 
+# --- FITUR 1: PILIHAN PERTANYAAN CEPAT (QUICK SUGGESTIONS) ---
+st.markdown(
+    "**💡 Contoh Pertanyaan Cepat:**", help="Klik tombol untuk langsung bertanya"
+)
+col1, col2, col3 = st.columns(3)
+
+prompt_to_submit = None
+
+if col1.button("📌 Apa itu Pemasaran?", use_container_width=True):
+    prompt_to_submit = "Apa definisi dan konsep utama Pemasaran menurut Bahan Ajar?"
+if col2.button("💡 Bauran Pemasaran (4P)", use_container_width=True):
+    prompt_to_submit = (
+        "Jelaskan tentang Bauran Pemasaran (Marketing Mix) 4P!"
+    )
+if col3.button("🎯 Perencanaan Strategis", use_container_width=True):
+    prompt_to_submit = "Bagaimana proses perencanaan strategis pemasaran?"
+
+st.write("---")
+
+# Tampilkan Percakapan Sebelumnya
 for msg in st.session_state.messages:
     if msg["role"] == "user":
         with st.chat_message("user", avatar="🧑‍🎓"):
@@ -123,9 +171,20 @@ for msg in st.session_state.messages:
             st.markdown(label_bot, unsafe_allow_html=True)
             st.write(msg["content"])
 
-# 7. Form Input Pertanyaan Mahasiswa
-user_query = st.chat_input("Tanyakan sesuatu tentang materi perkuliahan...")
+# Form Input Manual
+user_input = st.chat_input(
+    "Tanyakan sesuatu tentang materi perkuliahan Pemasaran..."
+)
 
+# Prioritaskan input dari tombol cepat jika ada
+if prompt_to_submit:
+    user_query = prompt_to_submit
+elif user_input:
+    user_query = user_input
+else:
+    user_query = None
+
+# 7. Proses Pertanyaan & Jawaban
 if user_query:
     if not api_key:
         st.error("⚠️ GROQ_API_KEY belum dikonfigurasi di Streamlit Secrets.")
@@ -140,7 +199,7 @@ if user_query:
             st.markdown(label_user, unsafe_allow_html=True)
             st.write(user_query)
 
-        # Pencarian Kata Kunci Relevan
+        # Pencarian Kata Kunci
         words = user_query.lower().split()
         paragraphs = context_text.split("\n\n")
         relevant_paragraphs = []
@@ -176,19 +235,42 @@ if user_query:
         try:
             client = Groq(api_key=api_key)
 
-            # Tampilkan pesan Asisten AI dengan Label Biru "Asisten Pak Juven"
             with st.chat_message("assistant", avatar=avatar_bot):
                 st.markdown(label_bot, unsafe_allow_html=True)
-                with st.spinner("Sedang menganalisis bahan ajar..."):
-                    chat_completion = client.chat.completions.create(
-                        messages=[{"role": "user", "content": prompt}],
-                        model="llama-3.1-8b-instant",
-                    )
-                    answer = chat_completion.choices[0].message.content
-                    st.write(answer)
+
+                # Dapatkan respons dari Groq AI
+                chat_completion = client.chat.completions.create(
+                    messages=[{"role": "user", "content": prompt}],
+                    model="llama-3.1-8b-instant",
+                )
+                full_response = chat_completion.choices[0].message.content
+
+                # --- FITUR 4: EFEK KETIK OTOMATIS (STREAMING) ---
+                message_placeholder = st.empty()
+                displayed_text = ""
+
+                # Mengetik per kelompok kata agar responsif & alami
+                words_list = full_response.split(" ")
+                for i, word in enumerate(words_list):
+                    displayed_text += word + " "
+                    message_placeholder.markdown(displayed_text + "▌")
+                    time.sleep(0.02)  # Kecepatan ketik
+
+                message_placeholder.markdown(full_response)
 
             st.session_state.messages.append(
-                {"role": "assistant", "content": answer}
+                {"role": "assistant", "content": full_response}
             )
         except Exception as e:
             st.error(f"Terjadi kesalahan: {e}")
+
+# --- FITUR HAK CIPTA & HAK AKSES (FOOTER) ---
+st.markdown(
+    """
+    <div class="custom-footer">
+        © 2026 <b>Asisten Akademik Pak Juven</b> • Hak Cipta Dilindungi Undang-Undang<br>
+        <i>Khusus dipergunakan untuk Lingkungan Perkuliahan Manajemen Pemasaran.</i>
+    </div>
+""",
+    unsafe_allow_html=True,
+)

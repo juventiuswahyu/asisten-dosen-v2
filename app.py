@@ -1,6 +1,5 @@
 import os
 from groq import Groq
-import st_pypdf  # Kita pakai library pembaca PDF sederhana
 from PyPDF2 import PdfReader
 import streamlit as st
 
@@ -18,11 +17,11 @@ st.write(
 api_key = st.secrets.get("GROQ_API_KEY")
 
 
-# 2. Fungsi untuk membaca semua PDF yang ada di dalam repository secara otomatis
+# 2. Fungsi untuk membaca semua PDF yang ada di repository secara otomatis
 @st.cache_resource
 def load_all_pdfs():
     pdf_text = ""
-    # Mencari semua file dengan ekstensi .pdf di folder utama repository
+    # Mencari semua file .pdf di folder utama repository
     for file in os.listdir("."):
         if file.endswith(".pdf"):
             try:
@@ -53,7 +52,10 @@ user_query = st.chat_input("Ketik pertanyaan materi kuliah di sini...")
 
 if user_query:
     if not api_key:
-        st.error("⚠️ API Key belum dikonfigurasi di Secrets.")
+        st.error(
+            "⚠️ API Key belum dikonfigurasi di Streamlit Secrets. Silakan tambahkan"
+            " GROQ_API_KEY."
+        )
     elif not context_text:
         st.warning(
             "⚠️ Belum ada file PDF materi di repository GitHub. Silakan upload"
@@ -67,24 +69,20 @@ if user_query:
         with st.chat_message("user"):
             st.write(user_query)
 
-        # 3. Fitur Pencarian Sederhana (Mengambil teks yang relevan saja)
-        # Bikin pencarian teks agar tidak melebih batas token
+        # Fitur Pencarian Kata Kunci Sederhana
         words = user_query.lower().split()
         paragraphs = context_text.split("\n\n")
         relevant_paragraphs = []
 
         for p in paragraphs:
-            # Jika ada kata kunci pertanyaan di dalam paragraf
             if any(word in p.lower() for word in words if len(word) > 3):
                 relevant_paragraphs.append(p)
 
-        # Jika pencarian kata kunci dapat, pakai itu. Jika tidak, ambil potongan teks awal.
         if relevant_paragraphs:
             selected_context = "\n".join(relevant_paragraphs[:10])
         else:
             selected_context = context_text[:15000]
 
-        # Batas aman karakter
         if len(selected_context) > 20000:
             selected_context = selected_context[:20000]
 

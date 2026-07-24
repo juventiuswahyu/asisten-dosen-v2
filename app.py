@@ -1,6 +1,8 @@
+import os
 from groq import Groq
-import streamlit as st
+import st_pypdf  # Kita pakai library pembaca PDF sederhana
 from PyPDF2 import PdfReader
+import streamlit as st
 
 st.set_page_config(
     page_title="Asisten Pengajar AI", page_icon="🎓", layout="centered"
@@ -8,39 +10,37 @@ st.set_page_config(
 
 st.title("🎓 Asisten Pengajar AI")
 st.write(
-    "Selamat datang! Silakan tanyakan materi perkuliahan atau soal di bawah"
-    " ini."
+    "Selamat datang! Silakan tanyakan materi perkuliahan di bawah ini. Jawaban"
+    " otomatis diambil dari bahan ajar."
 )
 
-# 1. Mengambil API Key secara otomatis dari Streamlit Secrets
+# 1. Ambil API Key dari Streamlit Secrets
 api_key = st.secrets.get("GROQ_API_KEY")
 
-# 2. Sidebar khusus Dosen untuk upload PDF
-with st.sidebar:
-    st.header("⚙️ Area Dosen")
-    uploaded_files = st.file_uploader(
-        "Unggah Materi PDF Kuliah di sini:",
-        type=["pdf"],
-        accept_multiple_files=True,
-    )
-    if uploaded_files:
-        st.success(f"✅ {len(uploaded_files)} file PDF berhasil dimuat!")
 
-# Ekstraksi Teks dari PDF
-context_text = ""
-if uploaded_files:
-    for file in uploaded_files:
-        pdf_reader = PdfReader(file)
-        for page in pdf_reader.pages:
-            text = page.extract_text()
-            if text:
-                context_text += text
+# 2. Fungsi untuk membaca semua PDF yang ada di dalam repository secara otomatis
+@st.cache_resource
+def load_all_pdfs():
+    pdf_text = ""
+    # Mencari semua file dengan ekstensi .pdf di folder utama repository
+    for file in os.listdir("."):
+        if file.endswith(".pdf"):
+            try:
+                reader = PdfReader(file)
+                for page in reader.pages:
+                    text = page.extract_text()
+                    if text:
+                        pdf_text += text + "\n"
+            except Exception as e:
+                print(f"Gagal membaca file {file}: {e}")
+    return pdf_text
 
-    # Membatasi jumlah teks agar tidak melebih batas token limit Groq
-    if len(context_text) > 35000:
-        context_text = context_text[:35000]
 
-# Riwayat Chat
+# Load materi otomatis di awal
+with st.spinner("Memuat bahan ajar..."):
+    context_text = load_all_pdfs()
+
+# Riwayat Percakapan
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -48,35 +48,58 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# Kolom Pertanyaan Mahasiswa
-user_query = st.chat_input("Ketik pertanyaan kamu di sini...")
+# Form Input Mahasiswa
+user_query = st.chat_input("Ketik pertanyaan materi kuliah di sini...")
 
 if user_query:
     if not api_key:
-        st.error(
-            "⚠️ Sistem belum siap (API Key belum diatur oleh Dosen di Secrets)."
-        )
+        st.error("⚠️ API Key belum dikonfigurasi di Secrets.")
     elif not context_text:
         st.warning(
-            "⚠️ Belum ada materi PDF yang diunggah oleh Dosen. Silakan hubungi"
-            " Dosen kamu."
+            "⚠️ Belum ada file PDF materi di repository GitHub. Silakan upload"
+            " file PDF ke GitHub."
         )
     else:
+        # Tampilkan pesan mahasiswa
         st.session_state.messages.append(
             {"role": "user", "content": user_query}
         )
         with st.chat_message("user"):
             st.write(user_query)
 
+        # 3. Fitur Pencarian Sederhana (Mengambil teks yang relevan saja)
+        # Bikin pencarian teks agar tidak melebih batas token
+        words = user_query.lower().split()
+        paragraphs = context_text.split("\n\n")
+        relevant_paragraphs = []
+
+        for p in paragraphs:
+            # Jika ada kata kunci pertanyaan di dalam paragraf
+            if any(word in p.lower() for word in words if len(word) > 3):
+                relevant_paragraphs.append(p)
+
+        # Jika pencarian kata kunci dapat, pakai itu. Jika tidak, ambil potongan teks awal.
+        if relevant_paragraphs:
+            selected_context = "\n".join(relevant_paragraphs[:10])
+        else:
+            selected_context = context_text[:15000]
+
+        # Batas aman karakter
+        if len(selected_context) > 20000:
+            selected_context = selected_context[:20000]
+
         prompt = f"""
-        Kamu adalah Asisten Pengajar yang ramah, sopan, dan akurat.
-        Jawablah pertanyaan mahasiswa HANYA berdasarkan bahan ajar berikut:
+        Kamu adalah Asisten Pengajar AI yang ramah, jelas, dan akurat.
+        Jawablah pertanyaan mahasiswa berdasarkan Bahan Ajar berikut:
         
-        {context_text}
+        === BAHAN AJAR ===
+        {selected_context}
+        ==================
         
-        Aturan:
-        1. Jika jawaban TIDAK ADA di dalam bahan ajar di atas, katakan dengan sopan: 'Maaf, materi tersebut tidak ditemukan dalam bahan ajar yang diunggah oleh Dosen.'
-        2. Berikan penjelasan yang rinci dan mudah dipahami dalam Bahasa Indonesia.
+        Aturan Jawaban:
+        1. Jawab HANYA berdasarkan Bahan Ajar di atas.
+        2. Jika jawaban tidak ada di Bahan Ajar, katakan: 'Maaf, materi tersebut tidak ditemukan dalam bahan ajar perkuliahan.'
+        3. Gunakan Bahasa Indonesia yang baik dan mudah dipahami.
         
         Pertanyaan Mahasiswa: {user_query}
         """
@@ -85,10 +108,10 @@ if user_query:
             client = Groq(api_key=api_key)
 
             with st.chat_message("assistant"):
-                with st.spinner("Mencari jawaban dari bahan ajar..."):
+                with st.spinner("Mencari jawaban di bahan ajar..."):
                     chat_completion = client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
-                        model="llama-3.1-8b-instant",  # Model hemat token & cepat
+                        model="llama-3.1-8b-instant",
                     )
                     answer = chat_completion.choices[0].message.content
                     st.write(answer)
@@ -97,4 +120,4 @@ if user_query:
                 {"role": "assistant", "content": answer}
             )
         except Exception as e:
-            st.error(f"Terjadi kesalahan pada sistem: {e}")
+            st.error(f"Terjadi kesalahan: {e}")

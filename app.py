@@ -7,22 +7,22 @@ import streamlit as st
 # 1. Konfigurasi Halaman Web
 st.set_page_config(
     page_title="Asisten Dosen AI",
-    page_icon="foto_dosen.jpg",  # Foto Bapak jadi Icon/Favicon di Tab Browser
+    page_icon="foto_dosen.png",  # Menggunakan file .png Bapak
     layout="centered",
     initial_sidebar_state="collapsed",
 )
 
-# Fungsi pembantu untuk mengubah foto lokal menjadi format Base64 (agar bisa dibaca HTML)
+# Fungsi untuk membaca foto .png lokal dan mengonversinya ke Base64
 def get_image_base64(image_path):
     if os.path.exists(image_path):
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
     return ""
 
-img_b64 = get_image_base64("foto_dosen.jpg")
-img_src = f"data:image/jpeg;base64,{img_b64}" if img_b64 else "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+img_b64 = get_image_base64("foto_dosen.png")
+img_src = f"data:image/png;base64,{img_b64}" if img_b64 else ""
 
-# 2. Custom CSS untuk Tampilan Modern
+# 2. Custom CSS Tampilan Modern
 st.markdown(
     """
     <style>
@@ -30,10 +30,9 @@ st.markdown(
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Header Container */
     .header-container {
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        padding: 2rem;
+        padding: 2.2rem 1.5rem;
         border-radius: 16px;
         color: white;
         text-align: center;
@@ -62,12 +61,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 3. Banner Utama dengan Foto Bapak
+# 3. Banner Utama dengan Foto Profil Bapak
 st.markdown(
     f"""
     <div class="header-container">
         <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
-            <img src="{img_src}" style="width: 110px; height: 110px; border-radius: 50%; border: 3px solid white; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+            <img src="{img_src}" style="width: 120px; height: 120px; border-radius: 50%; border: 3.5px solid white; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
         </div>
         <div class="header-title">🎓 Asisten Akademik AI</div>
         <div class="header-subtitle">Tanyakan hal terkait materi perkuliahan, tugas, atau konsep bahan ajar.</div>
@@ -105,8 +104,8 @@ with st.spinner("🔍 Memuat bahan ajar perkuliahan..."):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Tampilkan pesan sebelumnya dengan foto Bapak sebagai Avatar Asisten
-avatar_bot = "foto_dosen.jpg" if os.path.exists("foto_dosen.jpg") else "🤖"
+# Avatar bot menggunakan foto_dosen.png
+avatar_bot = "foto_dosen.png" if os.path.exists("foto_dosen.png") else "🤖"
 
 for msg in st.session_state.messages:
     avatar_img = "🧑‍🎓" if msg["role"] == "user" else avatar_bot
@@ -122,14 +121,14 @@ if user_query:
     elif not context_text:
         st.warning("⚠️ Belum ada file PDF materi di repository.")
     else:
-        # Tampilkan pesan Mahasiswa
+        # Tampilkan Pesan Mahasiswa
         st.session_state.messages.append(
             {"role": "user", "content": user_query}
         )
         with st.chat_message("user", avatar="🧑‍🎓"):
             st.write(user_query)
 
-        # Pencarian Kata Kunci
+        # Pencarian Kata Kunci Relevan
         words = user_query.lower().split()
         paragraphs = context_text.split("\n\n")
         relevant_paragraphs = []

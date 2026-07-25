@@ -1,9 +1,8 @@
 from datetime import datetime
 import os
 import time
-import gspread
+import requests
 from groq import Groq
-from google.oauth2.service_account import Credentials
 import streamlit as st
 
 # 1. Konfigurasi Halaman
@@ -98,34 +97,31 @@ st.markdown(
 api_key = st.secrets.get("GROQ_API_KEY")
 
 
-# Fungsi Simpan ke Google Sheets
+# Fungsi Simpan Data ke Google Sheets via Google Forms
 def save_to_google_sheets(
     nama, no_hp, sekolah, nama_bisnis, kategori, deskripsi, hasil
 ):
     try:
-        gcp_secrets = st.secrets["gcp_service_account"]
-        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-        credentials = Credentials.from_service_account_info(
-            gcp_secrets, scopes=scopes
-        )
-        client = gspread.authorize(credentials)
-        sheet = client.open("Data Leads Business Simulator").sheet1
-
+        # Link pengiriman form (Response URL)
+        form_url = "https://docs.google.com/forms/d/e/1FAIpQLSdpNOnwOqXv2WlK88yL2X_1Y8M8fG7RzL5P_x8A/formResponse" # Ganti ID Form jika perlu
+        
         waktu = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        row = [
-            waktu,
-            nama,
-            f"'{no_hp}",
-            sekolah,
-            nama_bisnis,
-            kategori,
-            deskripsi,
-            hasil[:300],
-        ]
-        sheet.append_row(row)
+        
+        # Mapping entry ID dari Google Form
+        payload = {
+            "entry.1706988008": waktu,
+            "entry.977874194": nama,
+            "entry.1247992411": f"'{no_hp}",
+            "entry.388531157": sekolah,
+            "entry.1786925872": nama_bisnis,
+            # Tambahkan entry ID sisanya di bawah jika ada
+        }
+        
+        # Kirim data HTTP POST
+        requests.post("https://docs.google.com/forms/u/0/d/e/1FAIpQLSc-PLACEHOLDER/formResponse", data=payload)
         return True
     except Exception as e:
-        print(f"Gagal simpan ke Google Sheets: {e}")
+        print(f"Gagal simpan ke Google Forms: {e}")
         return False
 
 

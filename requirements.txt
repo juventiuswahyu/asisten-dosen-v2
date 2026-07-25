@@ -1,3 +1,4 @@
 streamlit
 groq
-pypdf2
+gspread
+google-auth

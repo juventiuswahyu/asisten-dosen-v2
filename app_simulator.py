@@ -1,6 +1,9 @@
+from datetime import datetime
 import os
 import time
+import gspread
 from groq import Groq
+from google.oauth2.service_account import Credentials
 import streamlit as st
 
 # 1. Konfigurasi Halaman
@@ -11,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# 2. Custom CSS UI Modern Kualitas Tinggi
+# 2. Custom CSS UI
 st.markdown(
     """
     <style>
@@ -19,7 +22,6 @@ st.markdown(
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Banner Utama */
     .hero-container {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
         padding: 2.5rem 1.5rem;
@@ -37,12 +39,8 @@ st.markdown(
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-    .hero-subtitle {
-        font-size: 1rem;
-        opacity: 0.9;
-    }
+    .hero-subtitle { font-size: 1rem; opacity: 0.9; }
 
-    /* Card Hasil Evaluasi */
     .eval-card {
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
@@ -52,7 +50,6 @@ st.markdown(
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     }
     
-    /* Box Promosi Prodi (CTA) */
     .cta-box {
         background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
         border: 2px dashed #2563eb;
@@ -77,7 +74,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Initialize Session State untuk reset
+# Session State
 if "analyzed" not in st.session_state:
     st.session_state.analyzed = False
 if "response" not in st.session_state:
@@ -85,7 +82,7 @@ if "response" not in st.session_state:
 if "user_data" not in st.session_state:
     st.session_state.user_data = {}
 
-# 3. Header Hero Banner
+# Header
 st.markdown(
     """
     <div class="hero-container">
@@ -99,7 +96,28 @@ st.markdown(
 
 api_key = st.secrets.get("GROQ_API_KEY")
 
-# 4. Form Input Interaktif untuk Calon Mahasiswa
+
+# Fungsi Simpan Google Sheets
+def save_to_google_sheets(nama, sekolah, nama_bisnis, kategori, deskripsi, hasil):
+    try:
+        gcp_secrets = st.secrets["gcp_service_account"]
+        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+        credentials = Credentials.from_service_account_info(
+            gcp_secrets, scopes=scopes
+        )
+        client = gspread.authorize(credentials)
+        sheet = client.open("Data Leads Business Simulator").sheet1
+
+        waktu = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row = [waktu, nama, sekolah, nama_bisnis, kategori, deskripsi, hasil[:200]]
+        sheet.append_row(row)
+        return True
+    except Exception as e:
+        print(f"Gagal simpan ke Google Sheets: {e}")
+        return False
+
+
+# Form Input (Di-limit karakternya)
 st.markdown("### 📝 Masukkan Ide Bisnismu")
 
 with st.form("business_form"):
@@ -112,7 +130,7 @@ with st.form("business_form"):
         )
 
     nama_bisnis = st.text_input(
-        "Nama Ide Bisnis", placeholder="Misal: Kopi Herbal Nusantara"
+        "Nama Ide Bisnis", placeholder="Misal: Donat Kentang Yummy"
     )
 
     kategori = st.selectbox(
@@ -127,12 +145,14 @@ with st.form("business_form"):
         ],
     )
 
+    # DIBATASI 200 KARAKTER (Mencegah teks terlalu panjang)
     deskripsi = st.text_area(
-        "Jelaskan Ide Bisnismu Secara Singkat",
+        "Jelaskan Ide Bisnismu Secara Singkat (Maks. 200 Karakter)",
         placeholder=(
-            "Apa yang kamu jual? Siapa target pembelinya? Apa keunggulannya"
-            " dibanding pesaing?"
+            "Contoh: Jual donat kentang lembut varian matcha harga Rp5.000."
+            " Target teman sekolah via kantin dan TikTok."
         ),
+        max_chars=200,
         height=100,
     )
 
@@ -140,40 +160,52 @@ with st.form("business_form"):
         "⚡ Analisis Ide Bisnis Sekarang", type="primary", use_container_width=True
     )
 
-# 5. Proses Analisis AI
+# Proses AI Hemat Token
 if submit_btn:
     if not nama_bisnis or not deskripsi:
         st.warning("⚠️ Mohon isi Nama Bisnis dan Penjelasan Ide Bisnis dulu ya!")
     elif not api_key:
         st.error("⚠️ API Key belum terpasang di Streamlit Secrets.")
     else:
+        # Prompt Sangat Ringkas & Padat
         prompt = f"""
-        Kamu adalah AI Business Consultant dan Dosen Pakar dari Program Studi Manajemen.
-        Tugasmu adalah menganalisis ide bisnis dari calon mahasiswa bernama {nama} ({sekolah}).
+        Kamu Dosen Pakar Manajemen. Analisis ide bisnis dari {nama} ({sekolah}).
+        Bisnis: {nama_bisnis} ({kategori}).
+        Deskripsi: {deskripsi}
 
-        Detail Bisnis:
-        - Nama Bisnis: {nama_bisnis}
-        - Kategori: {kategori}
-        - Deskripsi Ide: {deskripsi}
+        Aturan: Berikan jawaban SINGKAT, PADAT, Maksimal 1-2 kalimat per poin!
 
-        Berikan keluaran dalam format yang sangat rapi dan menyemangati:
-        1. **Skor Potensi Bisnis** (Berikan nilai angka dari 60 hingga 95 berdasarkan kelogisan ide).
-        2. **Analisis Singkat SWOT** (Kekuatan & Tantangan Utama).
-        3. **Saran Strategi Pemasaran**: Berikan 2 tips pemasaran praktis.
-        4. **Pesan Motivasi Akademis**: Jelaskan mata kuliah di Prodi Manajemen yang bisa membantunya mewujudkan bisnis ini (misal: Manajemen Pemasaran, Kewirausahaan, Studi Kelayakan Bisnis).
-        
-        Gunakan gaya bahasa profesional, futuristik, ramah, dan memotivasi khas anak muda.
+        🎯 **Skor Potensi**: [Nilai 60-95] - [1 kalimat kesimpulan]
+
+        📌 **Rekomendasi STP**:
+        - **Segmenting**: [1 kalimat]
+        - **Targeting**: [1 kalimat]
+        - **Positioning**: [1 kalimat]
+
+        🛍️ **Bauran Pemasaran (4P)**:
+        - **Product**: [1 saran ringkas]
+        - **Price**: [1 saran ringkas]
+        - **Place**: [1 saran ringkas]
+        - **Promotion**: [1 ide promosi sosmed]
+
+        🎓 **Pesan Motivasi**: [1 kalimat ajakan gabung Prodi Manajemen]
         """
 
         try:
             client = Groq(api_key=api_key)
 
-            with st.spinner("🧠 AI sedang menganalisis potensi pasarmu..."):
+            with st.spinner("🧠 AI sedang menganalisis cepat..."):
                 chat_completion = client.chat.completions.create(
                     messages=[{"role": "user", "content": prompt}],
                     model="llama-3.1-8b-instant",
+                    max_tokens=350,  # BINDING UTAMA: Maksimal token respon AI
+                    temperature=0.6,
                 )
                 res_text = chat_completion.choices[0].message.content
+
+            save_to_google_sheets(
+                nama, sekolah, nama_bisnis, kategori, deskripsi, res_text
+            )
 
             st.session_state.analyzed = True
             st.session_state.response = res_text
@@ -187,12 +219,12 @@ if submit_btn:
         except Exception as e:
             st.error(f"Terjadi kesalahan: {e}")
 
-# 6. Menampilkan Hasil Evaluasi & Tombol Reset
+# Tampilan Hasil
 if st.session_state.analyzed:
     st.markdown(
         f"""
         <div class="eval-card">
-            <h3 style="color: #1e3a8a; margin-top:0;">📊 Laporan Evaluasi Bisnis: {st.session_state.user_data.get('nama_bisnis')}</h3>
+            <h3 style="color: #1e3a8a; margin-top:0;">📊 Analisis Strategi Bisnis: {st.session_state.user_data.get('nama_bisnis')}</h3>
             <p><b>Calon Innovator:</b> {st.session_state.user_data.get('nama')} ({st.session_state.user_data.get('sekolah')})</p>
             <hr>
         </div>
@@ -202,7 +234,6 @@ if st.session_state.analyzed:
 
     st.markdown(st.session_state.response)
 
-    # BANNER PROMOSI & CONVERSION (Call to Action)
     st.markdown(
         """
         <div class="cta-box">
@@ -220,14 +251,12 @@ if st.session_state.analyzed:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # TOMBOL RESET FORM / ULANGI ANALISIS
     if st.button("🔄 Uji Ide Bisnis Lain / Reset Form", use_container_width=True):
         st.session_state.analyzed = False
         st.session_state.response = ""
         st.session_state.user_data = {}
         st.rerun()
 
-# Footer
 st.markdown(
     """
     <br><hr>

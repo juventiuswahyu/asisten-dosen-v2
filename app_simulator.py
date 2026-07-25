@@ -34,6 +34,7 @@ st.markdown(
     .hero-title {
         font-size: 2.2rem;
         font-weight: 800;
+        margin-top: 0.8rem;
         margin-bottom: 0.5rem;
         background: linear-gradient(90deg, #38bdf8, #818cf8);
         -webkit-background-clip: text;
@@ -82,31 +83,19 @@ if "response" not in st.session_state:
 if "user_data" not in st.session_state:
     st.session_state.user_data = {}
 
+# Gambar Maskot Gagak (Base64 Embed)
+MASCOT_IMG = "https://i.ibb.co.com/84NfGTh/raven.png" 
+
 # Header Hero Banner
 st.markdown(
-    '<div class="hero-container">',
-    unsafe_allow_html=True,
-)
-
-# Tampilkan Gambar Logo (Jika file logo.png ada, pakai itu. Jika tidak, pakai URL/Emoji)
-if os.path.exists("logo.png"):
-    st.image("logo.png", width=130)
-else:
-    # Mengambil langsung gambar maskot jika logo belum di-upload lokal
-    st.markdown(
-        """
-        <div style="text-align: center; margin-bottom: 10px;">
-            <img src="https://raw.githubusercontent.com/juventiuswahyu/asisten-dosen-v2/main/logo.png" 
-                 width="130" 
-                 style="filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.5));"
-                 onerror="this.style.display='none'">
+    f"""
+    <div class="hero-container">
+        <div style="text-align: center;">
+            <img src="https://images.squarespace-cdn.com/content/v1/606c9a3a94158d626e2e50cf/1618239082914-7T3Q0V853O62Z2V59J9O/raven.png" 
+                 width="110" 
+                 style="filter: drop-shadow(0px 4px 12px rgba(0,0,0,0.5)); border-radius: 10px;"
+                 onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3069/3069172.png';">
         </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
-st.markdown(
-    """
         <div class="hero-title">Student Business Simulator</div>
         <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b></div>
     </div>
@@ -117,7 +106,7 @@ st.markdown(
 api_key = st.secrets.get("GROQ_API_KEY")
 
 
-# Fungsi Simpan ke Google Sheets (Termasuk No HP)
+# Fungsi Simpan ke Google Sheets
 def save_to_google_sheets(
     nama, no_hp, sekolah, nama_bisnis, kategori, deskripsi, hasil
 ):
@@ -248,7 +237,7 @@ if submit_btn:
         except Exception as e:
             st.error(f"Terjadi kesalahan: {e}")
 
-# Tampilan Hasil Evaluasi & Tombol Reset
+# Tampilan Hasil Evaluasi
 if st.session_state.analyzed:
     st.markdown(
         f"""
@@ -263,7 +252,6 @@ if st.session_state.analyzed:
 
     st.markdown(st.session_state.response)
 
-    # Call to Action
     st.markdown(
         """
         <div class="cta-box">
@@ -281,7 +269,6 @@ if st.session_state.analyzed:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Tombol Reset
     if st.button("🔄 Uji Ide Bisnis Lain / Reset Form", use_container_width=True):
         st.session_state.analyzed = False
         st.session_state.response = ""

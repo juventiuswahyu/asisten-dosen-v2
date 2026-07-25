@@ -8,7 +8,7 @@ import streamlit as st
 
 # 1. Konfigurasi Halaman
 st.set_page_config(
-    page_title="Business Pitch Evaluator - Prodi Manajemen",
+    page_title="Business Pitch Evaluator - Prodi Manajemen Universitas Karangturi",
     page_icon="🚀",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -18,18 +18,15 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Sembunyikan elemen bawaan Streamlit yang tidak perlu */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* Kurangi padding bawaan Streamlit di paling atas */
     .block-container {
         padding-top: 1.5rem !important;
         padding-bottom: 2rem !important;
     }
 
-    /* Hero Banner Utama */
     .hero-container {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
         padding: 2.2rem 1.5rem;
@@ -65,7 +62,6 @@ st.markdown(
         font-weight: 400;
     }
 
-    /* Evaluasi Card */
     .eval-card {
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
@@ -73,28 +69,6 @@ st.markdown(
         padding: 1.5rem;
         margin-top: 1.5rem;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    }
-    
-    /* CTA Box */
-    .cta-box {
-        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-        border: 2px dashed #2563eb;
-        border-radius: 16px;
-        padding: 1.5rem;
-        text-align: center;
-        margin-top: 2rem;
-    }
-    
-    .cta-button {
-        display: inline-block;
-        background-color: #2563eb;
-        color: white !important;
-        font-weight: bold;
-        padding: 0.8rem 1.8rem;
-        border-radius: 30px;
-        text-decoration: none;
-        margin-top: 1rem;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
     }
     </style>
 """,
@@ -115,7 +89,7 @@ st.markdown(
     <div class="hero-container">
         <div class="hero-icon">🚀</div>
         <div class="hero-title">Student Business Simulator</div>
-        <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b></div>
+        <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen Universitas Karangturi</b></div>
     </div>
 """,
     unsafe_allow_html=True,
@@ -168,7 +142,7 @@ with st.form("business_form"):
         )
 
     sekolah = st.text_input(
-        "Asal Sekolah / Instansi", placeholder="Misal: SMAN 1 Jakarta"
+        "Asal Sekolah / Instansi", placeholder="Misal: SMAN 1 Semarang"
     )
 
     nama_bisnis = st.text_input(
@@ -212,19 +186,20 @@ if submit_btn:
         st.error("⚠️ API Key belum terpasang di Streamlit Secrets.")
     else:
         prompt = (
-            f"Kamu Dosen Pakar Manajemen Pemasaran. Analisis ide bisnis dari"
-            f" calon mahasiswa bernama {nama} ({sekolah}).\n"
-            f"Detail Bisnis:\n- Nama Bisnis: {nama_bisnis}\n- Kategori:"
-            f" {kategori}\n- Deskripsi Ide: {deskripsi}\n\nATURAN: Jawab"
-            " SINGKAT, PADAT, dan Maksimal 1-2 kalimat per poin agar jawaban"
-            " lengkap dan tidak terpotong!\n\n🎯 **Skor Potensi**: [Nilai"
-            " 60-95] - [1 kalimat kesimpulan]\n\n📌 **Rekomendasi STP**:\n-"
-            " **Segmenting**: [1 kalimat ringkas]\n- **Targeting**: [1 kalimat"
-            " ringkas]\n- **Positioning**: [1 kalimat ringkas]\n\n🛍️ **Bauran"
-            " Pemasaran (4P)**:\n- **Product**: [1 saran ringkas]\n- **Price**:"
-            " [1 saran ringkas]\n- **Place**: [1 saran ringkas]\n- **Promotion**:"
-            " [1 ide promosi sosmed]\n\n🎓 **Pesan Motivasi**: [1-2 kalimat"
-            " inspiratif dan ajakan bergabung dengan Prodi Manajemen]"
+            f"Kamu Dosen Pakar Manajemen Pemasaran Universitas Karangturi"
+            f" Semarang. Analisis ide bisnis dari calon mahasiswa bernama {nama}"
+            f" ({sekolah}).\nDetail Bisnis:\n- Nama Bisnis: {nama_bisnis}\n-"
+            f" Kategori: {kategori}\n- Deskripsi Ide: {deskripsi}\n\nATURAN:"
+            " Jawab SINGKAT, PADAT, dan Maksimal 1-2 kalimat per poin agar"
+            " jawaban lengkap dan tidak terpotong!\n\n🎯 **Skor Potensi**:"
+            " [Nilai 60-95] - [1 kalimat kesimpulan]\n\n📌 **Rekomendasi"
+            " STP**:\n- **Segmenting**: [1 kalimat ringkas]\n- **Targeting**: [1"
+            " kalimat ringkas]\n- **Positioning**: [1 kalimat ringkas]\n\n🛍️"
+            " **Bauran Pemasaran (4P)**:\n- **Product**: [1 saran ringkas]\n-"
+            " **Price**: [1 saran ringkas]\n- **Place**: [1 saran ringkas]\n-"
+            " **Promotion**: [1 ide promosi sosmed]\n\n🎓 **Pesan Motivasi**:"
+            " [1-2 kalimat inspiratif dan ajakan bergabung dengan Prodi"
+            " Manajemen Universitas Karangturi Semarang]"
         )
 
         try:
@@ -250,7 +225,8 @@ if submit_btn:
                 "sekolah": sekolah,
                 "nama_bisnis": nama_bisnis,
             }
-            st.balloons()
+            # Efek animasi melayang pengganti balon
+            st.snow()
 
         except Exception as e:
             st.error(f"Terjadi kesalahan: {e}")
@@ -270,35 +246,21 @@ if st.session_state.analyzed:
 
     st.markdown(st.session_state.response)
 
-    st.markdown(
-        """
-        <div class="cta-box">
-            <h3 style="color: #1e3a8a; margin-bottom: 0.5rem;">🎓 Ingin Ide Bisnis Ini Jadi Nyata?</h3>
-            <p style="color: #475569; font-size: 0.95rem;">
-                Di <b>Prodi Manajemen</b>, kamu akan dibimbing langsung oleh dosen ahli dan praktisi bisnis untuk mengeksekusi ide ini hingga menghasilkan profit nyata!
-            </p>
-            <a href="https://wa.me/6281234567890" target="_blank" class="cta-button">
-                📲 Konsultasi Pendaftaran via WhatsApp
-            </a>
-        </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # Tombol Reset
     if st.button("🔄 Uji Ide Bisnis Lain / Reset Form", use_container_width=True):
         st.session_state.analyzed = False
         st.session_state.response = ""
         st.session_state.user_data = {}
         st.rerun()
 
-# Footer
+# Footer Copyright
 st.markdown(
     """
     <br><hr>
-    <div style="text-align: center; color: #94a3b8; font-size: 0.8rem;">
-        © 2026 <b>Program Studi Manajemen</b> • Student Business Simulator AI
+    <div style="text-align: center; color: #94a3b8; font-size: 0.85rem;">
+        © 2026 <b>Prodi Manajemen Universitas Karangturi Semarang</b> • Student Business Simulator AI
     </div>
 """,
     unsafe_allow_html=True,

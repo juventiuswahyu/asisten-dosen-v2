@@ -9,30 +9,63 @@ import streamlit as st
 # 1. Konfigurasi Halaman
 st.set_page_config(
     page_title="Business Pitch Evaluator - Prodi Manajemen",
-    page_icon="🦅",
+    page_icon="🚀",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
 
-# 2. Custom CSS UI (Hanya untuk Styling Elemen Bawaan)
+# 2. Custom CSS UI
 st.markdown(
     """
     <style>
+    /* Sembunyikan elemen bawaan Streamlit yang tidak perlu */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    
+    /* Kurangi padding bawaan Streamlit di paling atas */
+    .block-container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 2rem !important;
+    }
 
-    /* Style untuk Banner Utama */
-    [data-testid="stVerticalBlock"] > div:has(div.banner-marker) {
+    /* Hero Banner Utama */
+    .hero-container {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-        padding: 2rem 1rem;
+        padding: 2.2rem 1.5rem;
         border-radius: 20px;
+        color: white;
         text-align: center;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     }
     
-    /* Style Kartu Hasil Analisis */
+    .hero-icon {
+        font-size: 3.2rem;
+        line-height: 1;
+        margin-bottom: 0.8rem;
+        display: inline-block;
+        filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.3));
+    }
+
+    .hero-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 0.6rem;
+        background: linear-gradient(90deg, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1.2;
+    }
+
+    .hero-subtitle { 
+        font-size: 1rem; 
+        color: #e2e8f0;
+        opacity: 0.95; 
+        font-weight: 400;
+    }
+
+    /* Evaluasi Card */
     .eval-card {
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
@@ -42,7 +75,7 @@ st.markdown(
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     }
     
-    /* Style Box CTA */
+    /* CTA Box */
     .cta-box {
         background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
         border: 2px dashed #2563eb;
@@ -51,6 +84,7 @@ st.markdown(
         text-align: center;
         margin-top: 2rem;
     }
+    
     .cta-button {
         display: inline-block;
         background-color: #2563eb;
@@ -75,48 +109,22 @@ if "response" not in st.session_state:
 if "user_data" not in st.session_state:
     st.session_state.user_data = {}
 
-# --- HEADER HERO BANNER (100% Streamlit Native) ---
-banner_container = st.container()
-with banner_container:
-    # Marker penanda untuk CSS
-    st.markdown(
-        '<div class="banner-marker" style="display:none;"></div>',
-        unsafe_allow_html=True,
-    )
-
-    # Menampilkan Logo/Gambar
-    if os.path.exists("logo.png"):
-        col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
-        with col_l2:
-            st.image("logo.png", width=120)
-    elif os.path.exists("logo.jpg"):
-        col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
-        with col_l2:
-            st.image("logo.jpg", width=120)
-    else:
-        st.markdown(
-            '<div style="text-align:center; font-size: 3.5rem;'
-            ' margin-bottom:-10px;">🦅</div>',
-            unsafe_allow_html=True,
-        )
-
-    # Judul & Subtitle
-    st.markdown(
-        """
-        <h1 style="color: #38bdf8; text-align: center; font-weight: 800; font-size: 2.2rem; margin-top: 10px; margin-bottom: 5px;">
-            Student Business Simulator
-        </h1>
-        <p style="color: #f8fafc; text-align: center; font-size: 1rem; opacity: 0.95; margin-bottom: 0;">
-            Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b>
-        </p>
-    """,
-        unsafe_allow_html=True,
-    )
+# --- HEADER HERO BANNER ---
+st.markdown(
+    """
+    <div class="hero-container">
+        <div class="hero-icon">🚀</div>
+        <div class="hero-title">Student Business Simulator</div>
+        <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b></div>
+    </div>
+""",
+    unsafe_allow_html=True,
+)
 
 api_key = st.secrets.get("GROQ_API_KEY")
 
 
-# Fungsi Simpan ke Google Sheets (Termasuk No HP)
+# Fungsi Simpan ke Google Sheets
 def save_to_google_sheets(
     nama, no_hp, sekolah, nama_bisnis, kategori, deskripsi, hasil
 ):

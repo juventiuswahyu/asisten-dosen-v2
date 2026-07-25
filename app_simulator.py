@@ -205,7 +205,9 @@ if submit_btn:
         try:
             client = Groq(api_key=api_key)
 
-            with st.spinner("🧠 AI sedang menganalisis strategi bisnismu..."):
+            with st.spinner(
+                "🔥 AI sedang meracik strategi bisnis terbaikmu..."
+            ):
                 chat_completion = client.chat.completions.create(
                     messages=[{"role": "user", "content": prompt}],
                     model="llama-3.1-8b-instant",
@@ -225,8 +227,9 @@ if submit_btn:
                 "sekolah": sekolah,
                 "nama_bisnis": nama_bisnis,
             }
-            # Efek animasi melayang pengganti balon
-            st.snow()
+
+            # Notifikasi Semangat Bertema Api & Roket
+            st.toast("🔥 Analisis Selesai! Semangat Berinovasi!", icon="🚀")
 
         except Exception as e:
             st.error(f"Terjadi kesalahan: {e}")

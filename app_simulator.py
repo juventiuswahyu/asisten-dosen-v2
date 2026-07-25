@@ -74,7 +74,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Session State
+# Initialize Session State
 if "analyzed" not in st.session_state:
     st.session_state.analyzed = False
 if "response" not in st.session_state:
@@ -82,7 +82,7 @@ if "response" not in st.session_state:
 if "user_data" not in st.session_state:
     st.session_state.user_data = {}
 
-# Header
+# Header Hero Banner
 st.markdown(
     """
     <div class="hero-container">
@@ -97,7 +97,7 @@ st.markdown(
 api_key = st.secrets.get("GROQ_API_KEY")
 
 
-# Fungsi Simpan Google Sheets
+# Fungsi Simpan ke Google Sheets
 def save_to_google_sheets(nama, sekolah, nama_bisnis, kategori, deskripsi, hasil):
     try:
         gcp_secrets = st.secrets["gcp_service_account"]
@@ -109,7 +109,7 @@ def save_to_google_sheets(nama, sekolah, nama_bisnis, kategori, deskripsi, hasil
         sheet = client.open("Data Leads Business Simulator").sheet1
 
         waktu = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        row = [waktu, nama, sekolah, nama_bisnis, kategori, deskripsi, hasil[:200]]
+        row = [waktu, nama, sekolah, nama_bisnis, kategori, deskripsi, hasil[:300]]
         sheet.append_row(row)
         return True
     except Exception as e:
@@ -117,7 +117,7 @@ def save_to_google_sheets(nama, sekolah, nama_bisnis, kategori, deskripsi, hasil
         return False
 
 
-# Form Input (Di-limit karakternya)
+# Form Input
 st.markdown("### 📝 Masukkan Ide Bisnismu")
 
 with st.form("business_form"):
@@ -145,7 +145,6 @@ with st.form("business_form"):
         ],
     )
 
-    # DIBATASI 200 KARAKTER (Mencegah teks terlalu panjang)
     deskripsi = st.text_area(
         "Jelaskan Ide Bisnismu Secara Singkat (Maks. 200 Karakter)",
         placeholder=(
@@ -160,65 +159,42 @@ with st.form("business_form"):
         "⚡ Analisis Ide Bisnis Sekarang", type="primary", use_container_width=True
     )
 
-# Proses AI Hemat Token
+# Proses AI
 if submit_btn:
     if not nama_bisnis or not deskripsi:
         st.warning("⚠️ Mohon isi Nama Bisnis dan Penjelasan Ide Bisnis dulu ya!")
     elif not api_key:
         st.error("⚠️ API Key belum terpasang di Streamlit Secrets.")
     else:
-        # Prompt Sangat Ringkas & Padat
-       prompt = f"""
-Kamu Dosen Pakar Manajemen. Analisis ide bisnis dari {nama} ({sekolah}).
-Bisnis: {nama_bisnis} ({kategori}).
-Deskripsi: {deskripsi}
-
-PENTING: Jawab SINGKAT, PADAT, Maksimal 1 kalimat per poin agar jawaban lengkap!
-
-🎯 **Skor Potensi**: [Nilai 60-95] - [1 kalimat kesimpulan]
-
-📌 **Rekomendasi STP**:
-- **Segmenting**: [1 kalimat ringkas]
-- **Targeting**: [1 kalimat ringkas]
-- **Positioning**: [1 kalimat ringkas]
-
-🛍️ **Bauran Pemasaran (4P)**:
-- **Product**: [1 saran ringkas]
-- **Price**: [1 saran ringkas]
-- **Place**: [1 saran ringkas]
-- **Promotion**: [1 ide promosi sosmed]
-
-🎓 **Pesan Motivasi**: [1 kalimat singkat ajakan gabung Prodi Manajemen]
-"""
-
-        🎯 **Skor Potensi**: [Nilai 60-95] - [1 kalimat kesimpulan]
-
-        📌 **Rekomendasi STP**:
-        - **Segmenting**: [1 kalimat]
-        - **Targeting**: [1 kalimat]
-        - **Positioning**: [1 kalimat]
-
-        🛍️ **Bauran Pemasaran (4P)**:
-        - **Product**: [1 saran ringkas]
-        - **Price**: [1 saran ringkas]
-        - **Place**: [1 saran ringkas]
-        - **Promotion**: [1 ide promosi sosmed]
-
-        🎓 **Pesan Motivasi**: [1 kalimat ajakan gabung Prodi Manajemen]
-        """
+        prompt = (
+            f"Kamu Dosen Pakar Manajemen Pemasaran. Analisis ide bisnis dari"
+            f" calon mahasiswa bernama {nama} ({sekolah}).\n"
+            f"Detail Bisnis:\n- Nama Bisnis: {nama_bisnis}\n- Kategori:"
+            f" {kategori}\n- Deskripsi Ide: {deskripsi}\n\nATURAN: Jawab"
+            " SINGKAT, PADAT, dan Maksimal 1-2 kalimat per poin agar jawaban"
+            " lengkap dan tidak terpotong!\n\n🎯 **Skor Potensi**: [Nilai"
+            " 60-95] - [1 kalimat kesimpulan]\n\n📌 **Rekomendasi STP**:\n-"
+            " **Segmenting**: [1 kalimat ringkas]\n- **Targeting**: [1 kalimat"
+            " ringkas]\n- **Positioning**: [1 kalimat ringkas]\n\n🛍️ **Bauran"
+            " Pemasaran (4P)**:\n- **Product**: [1 saran ringkas]\n- **Price**:"
+            " [1 saran ringkas]\n- **Place**: [1 saran ringkas]\n- **Promotion**:"
+            " [1 ide promosi sosmed]\n\n🎓 **Pesan Motivasi**: [1-2 kalimat"
+            " inspiratif dan ajakan bergabung dengan Prodi Manajemen]"
+        )
 
         try:
             client = Groq(api_key=api_key)
 
-            with st.spinner("🧠 AI sedang menganalisis cepat..."):
+            with st.spinner("🧠 AI sedang menganalisis strategi bisnismu..."):
                 chat_completion = client.chat.completions.create(
                     messages=[{"role": "user", "content": prompt}],
                     model="llama-3.1-8b-instant",
-                    max_tokens=350,  # BINDING UTAMA: Maksimal token respon AI
+                    max_tokens=500,
                     temperature=0.6,
                 )
                 res_text = chat_completion.choices[0].message.content
 
+            # Auto-save
             save_to_google_sheets(
                 nama, sekolah, nama_bisnis, kategori, deskripsi, res_text
             )
@@ -235,7 +211,7 @@ PENTING: Jawab SINGKAT, PADAT, Maksimal 1 kalimat per poin agar jawaban lengkap!
         except Exception as e:
             st.error(f"Terjadi kesalahan: {e}")
 
-# Tampilan Hasil
+# Tampilan Hasil Evaluasi & Tombol Reset
 if st.session_state.analyzed:
     st.markdown(
         f"""
@@ -250,6 +226,7 @@ if st.session_state.analyzed:
 
     st.markdown(st.session_state.response)
 
+    # Call to Action
     st.markdown(
         """
         <div class="cta-box">
@@ -267,12 +244,14 @@ if st.session_state.analyzed:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # Tombol Reset
     if st.button("🔄 Uji Ide Bisnis Lain / Reset Form", use_container_width=True):
         st.session_state.analyzed = False
         st.session_state.response = ""
         st.session_state.user_data = {}
         st.rerun()
 
+# Footer
 st.markdown(
     """
     <br><hr>

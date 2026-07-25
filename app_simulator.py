@@ -9,7 +9,7 @@ import streamlit as st
 # 1. Konfigurasi Halaman
 st.set_page_config(
     page_title="Business Pitch Evaluator - Prodi Manajemen",
-    page_icon="🚀",
+    page_icon="🦅",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
@@ -24,7 +24,7 @@ st.markdown(
 
     .hero-container {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-        padding: 2.5rem 1.5rem;
+        padding: 2rem 1.5rem;
         border-radius: 20px;
         color: white;
         text-align: center;
@@ -40,6 +40,13 @@ st.markdown(
         -webkit-text-fill-color: transparent;
     }
     .hero-subtitle { font-size: 1rem; opacity: 0.9; }
+
+    .hero-logo {
+        width: 100px;
+        height: auto;
+        margin-bottom: 0.8rem;
+        filter: drop-shadow(0px 4px 10px rgba(0, 0, 0, 0.4));
+    }
 
     .eval-card {
         background-color: #ffffff;
@@ -82,23 +89,43 @@ if "response" not in st.session_state:
 if "user_data" not in st.session_state:
     st.session_state.user_data = {}
 
-# Header Hero Banner
-st.markdown(
-    """
-    <div class="hero-container">
-        <div style="font-size: 3rem; margin-bottom: 0.5rem;">🚀</div>
-        <div class="hero-title">Student Business Simulator</div>
-        <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b></div>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
+# Header Hero Banner dengan Maskot Gambar
+logo_path = "logo.png"
+
+if os.path.exists(logo_path):
+    st.markdown(
+        f"""
+        <div class="hero-container">
+            <img src="data:image/png;base64,{st.image if False else ''}" class="hero-logo" style="display:none;">
+            <div style="text-align: center;">
+                <img src="https://raw.githubusercontent.com/juventiuswahyu/asisten-dosen-v2/main/logo.png" class="hero-logo" alt="Mascot">
+            </div>
+            <div class="hero-title">Student Business Simulator</div>
+            <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b></div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+else:
+    # Fallback emoji jika logo belum diupload
+    st.markdown(
+        """
+        <div class="hero-container">
+            <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🦅</div>
+            <div class="hero-title">Student Business Simulator</div>
+            <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b></div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
 
 api_key = st.secrets.get("GROQ_API_KEY")
 
 
-# Fungsi Simpan ke Google Sheets
-def save_to_google_sheets(nama, sekolah, nama_bisnis, kategori, deskripsi, hasil):
+# Fungsi Simpan ke Google Sheets (Diperbarui dengan No HP)
+def save_to_google_sheets(
+    nama, no_hp, sekolah, nama_bisnis, kategori, deskripsi, hasil
+):
     try:
         gcp_secrets = st.secrets["gcp_service_account"]
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -109,7 +136,17 @@ def save_to_google_sheets(nama, sekolah, nama_bisnis, kategori, deskripsi, hasil
         sheet = client.open("Data Leads Business Simulator").sheet1
 
         waktu = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        row = [waktu, nama, sekolah, nama_bisnis, kategori, deskripsi, hasil[:300]]
+        # Menambahkan kolom No HP ke database
+        row = [
+            waktu,
+            nama,
+            f"'{no_hp}",
+            sekolah,
+            nama_bisnis,
+            kategori,
+            deskripsi,
+            hasil[:300],
+        ]
         sheet.append_row(row)
         return True
     except Exception as e:
@@ -118,16 +155,20 @@ def save_to_google_sheets(nama, sekolah, nama_bisnis, kategori, deskripsi, hasil
 
 
 # Form Input
-st.markdown("### 📝 Masukkan Ide Bisnismu")
+st.markdown("### 📝 Masukkan Data & Ide Bisnismu")
 
 with st.form("business_form"):
     col1, col2 = st.columns(2)
     with col1:
         nama = st.text_input("Nama Calon Mahasiswa", placeholder="Misal: Andi")
     with col2:
-        sekolah = st.text_input(
-            "Asal Sekolah/Instansi", placeholder="Misal: SMAN 1"
+        no_hp = st.text_input(
+            "Nomor WhatsApp / HP", placeholder="Misal: 081234567890"
         )
+
+    sekolah = st.text_input(
+        "Asal Sekolah / Instansi", placeholder="Misal: SMAN 1 Jakarta"
+    )
 
     nama_bisnis = st.text_input(
         "Nama Ide Bisnis", placeholder="Misal: Donat Kentang Yummy"
@@ -161,8 +202,8 @@ with st.form("business_form"):
 
 # Proses AI
 if submit_btn:
-    if not nama_bisnis or not deskripsi:
-        st.warning("⚠️ Mohon isi Nama Bisnis dan Penjelasan Ide Bisnis dulu ya!")
+    if not nama or not no_hp or not nama_bisnis or not deskripsi:
+        st.warning("⚠️ Mohon lengkapi Nama, No. WhatsApp, Nama Bisnis, dan Penjelasan Ide Bisnis dulu ya!")
     elif not api_key:
         st.error("⚠️ API Key belum terpasang di Streamlit Secrets.")
     else:
@@ -194,9 +235,9 @@ if submit_btn:
                 )
                 res_text = chat_completion.choices[0].message.content
 
-            # Auto-save
+            # Auto-save termasuk No HP
             save_to_google_sheets(
-                nama, sekolah, nama_bisnis, kategori, deskripsi, res_text
+                nama, no_hp, sekolah, nama_bisnis, kategori, deskripsi, res_text
             )
 
             st.session_state.analyzed = True

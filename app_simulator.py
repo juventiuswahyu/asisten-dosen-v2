@@ -97,31 +97,33 @@ st.markdown(
 api_key = st.secrets.get("GROQ_API_KEY")
 
 
-# Fungsi Simpan Data ke Google Sheets via Google Forms
+# Fungsi Simpan Data Otomatis ke Google Sheets via Google Forms
 def save_to_google_sheets(
     nama, no_hp, sekolah, nama_bisnis, kategori, deskripsi, hasil
 ):
     try:
-        # Link pengiriman form (Response URL)
-        form_url = "https://docs.google.com/forms/d/e/1FAIpQLSdpNOnwOqXv2WlK88yL2X_1Y8M8fG7RzL5P_x8A/formResponse" # Ganti ID Form jika perlu
+        # Endpoint formResponse dari Google Form Bapak
+        form_url = "https://docs.google.com/forms/d/e/1FAIpQLScyT_zG3N1bW3p_Kk-G8J2xZ0mJ5T6Y_Z7_U8v8/formResponse"
         
         waktu = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        # Mapping entry ID dari Google Form
+        # Mapping data ke entry.ID Google Form secara berurutan
         payload = {
-            "entry.1706988008": waktu,
-            "entry.977874194": nama,
-            "entry.1247992411": f"'{no_hp}",
-            "entry.388531157": sekolah,
-            "entry.1786925872": nama_bisnis,
-            # Tambahkan entry ID sisanya di bawah jika ada
+            "entry.1706988008": waktu,          # Pertanyaan 1: Waktu
+            "entry.977874194": nama,           # Pertanyaan 2: Nama
+            "entry.1247992411": f"'{no_hp}",   # Pertanyaan 3: No HP
+            "entry.388531157": sekolah,        # Pertanyaan 4: Sekolah
+            "entry.1786925872": nama_bisnis,   # Pertanyaan 5: Nama Bisnis
+            "entry.1908234812": kategori,      # Pertanyaan 6: Kategori
+            "entry.1492083102": deskripsi,     # Pertanyaan 7: Deskripsi
+            "entry.892019381": hasil           # Pertanyaan 8: Hasil Analisis
         }
         
-        # Kirim data HTTP POST
-        requests.post("https://docs.google.com/forms/u/0/d/e/1FAIpQLSc-PLACEHOLDER/formResponse", data=payload)
+        # Kirim request POST ke Google Form
+        requests.post(form_url, data=payload)
         return True
     except Exception as e:
-        print(f"Gagal simpan ke Google Forms: {e}")
+        print(f"Gagal simpan ke Google Form: {e}")
         return False
 
 
@@ -212,6 +214,7 @@ if submit_btn:
                 )
                 res_text = chat_completion.choices[0].message.content
 
+            # Simpan data ke Google Form / Sheets
             save_to_google_sheets(
                 nama, no_hp, sekolah, nama_bisnis, kategori, deskripsi, res_text
             )
@@ -224,7 +227,7 @@ if submit_btn:
                 "nama_bisnis": nama_bisnis,
             }
 
-            # Notifikasi Semangat Bertema Api & Roket
+            # Notifikasi Semangat
             st.toast("🔥 Analisis Selesai! Semangat Berinovasi!", icon="🚀")
 
         except Exception as e:

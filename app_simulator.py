@@ -97,29 +97,26 @@ st.markdown(
 api_key = st.secrets.get("GROQ_API_KEY")
 
 
-# Fungsi Simpan Data Otomatis ke Google Sheets via Google Forms
+# Fungsi Simpan Data Otomatis ke Google Sheets via Google Forms (URL & ID ASLI)
 def save_to_google_sheets(
     nama, no_hp, sekolah, nama_bisnis, kategori, deskripsi, hasil
 ):
     try:
-        # Endpoint formResponse dari Google Form Bapak
-        form_url = "https://docs.google.com/forms/d/e/1FAIpQLScyT_zG3N1bW3p_Kk-G8J2xZ0mJ5T6Y_Z7_U8v8/formResponse"
+        form_url = "https://docs.google.com/forms/d/e/1FAIpQLSeITNKsuvtUYWDlV00O9uHWjIP5PVM9NCV-UGgmWOkMu-TVpw/formResponse"
         
         waktu = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        # Mapping data ke entry.ID Google Form secara berurutan
         payload = {
-            "entry.1706988008": waktu,          # Pertanyaan 1: Waktu
-            "entry.977874194": nama,           # Pertanyaan 2: Nama
-            "entry.1247992411": f"'{no_hp}",   # Pertanyaan 3: No HP
-            "entry.388531157": sekolah,        # Pertanyaan 4: Sekolah
-            "entry.1786925872": nama_bisnis,   # Pertanyaan 5: Nama Bisnis
-            "entry.1908234812": kategori,      # Pertanyaan 6: Kategori
-            "entry.1492083102": deskripsi,     # Pertanyaan 7: Deskripsi
-            "entry.892019381": hasil           # Pertanyaan 8: Hasil Analisis
+            "entry.1706988008": waktu,          # Waktu
+            "entry.977874194": nama,           # Nama
+            "entry.1247992411": f"'{no_hp}",   # No HP
+            "entry.388531157": sekolah,        # Sekolah
+            "entry.1786925872": nama_bisnis,   # Nama Bisnis
+            "entry.1772523157": kategori,      # Kategori
+            "entry.1107238390": deskripsi,     # Deskripsi
+            "entry.1074476266": hasil          # Hasil Analisis
         }
         
-        # Kirim request POST ke Google Form
         requests.post(form_url, data=payload)
         return True
     except Exception as e:

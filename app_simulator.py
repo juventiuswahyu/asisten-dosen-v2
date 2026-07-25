@@ -24,7 +24,7 @@ st.markdown(
 
     .hero-container {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-        padding: 2rem 1.5rem;
+        padding: 2.5rem 1.5rem;
         border-radius: 20px;
         color: white;
         text-align: center;
@@ -40,13 +40,6 @@ st.markdown(
         -webkit-text-fill-color: transparent;
     }
     .hero-subtitle { font-size: 1rem; opacity: 0.9; }
-
-    .hero-logo {
-        width: 100px;
-        height: auto;
-        margin-bottom: 0.8rem;
-        filter: drop-shadow(0px 4px 10px rgba(0, 0, 0, 0.4));
-    }
 
     .eval-card {
         background-color: #ffffff;
@@ -89,40 +82,42 @@ if "response" not in st.session_state:
 if "user_data" not in st.session_state:
     st.session_state.user_data = {}
 
-# Header Hero Banner dengan Maskot Gambar
-logo_path = "logo.png"
+# Header Hero Banner
+st.markdown(
+    '<div class="hero-container">',
+    unsafe_allow_html=True,
+)
 
-if os.path.exists(logo_path):
-    st.markdown(
-        f"""
-        <div class="hero-container">
-            <img src="data:image/png;base64,{st.image if False else ''}" class="hero-logo" style="display:none;">
-            <div style="text-align: center;">
-                <img src="https://raw.githubusercontent.com/juventiuswahyu/asisten-dosen-v2/main/logo.png" class="hero-logo" alt="Mascot">
-            </div>
-            <div class="hero-title">Student Business Simulator</div>
-            <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b></div>
-        </div>
-    """,
-        unsafe_allow_html=True,
-    )
+# Tampilkan Gambar Logo (Jika file logo.png ada, pakai itu. Jika tidak, pakai URL/Emoji)
+if os.path.exists("logo.png"):
+    st.image("logo.png", width=130)
 else:
-    # Fallback emoji jika logo belum diupload
+    # Mengambil langsung gambar maskot jika logo belum di-upload lokal
     st.markdown(
         """
-        <div class="hero-container">
-            <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🦅</div>
-            <div class="hero-title">Student Business Simulator</div>
-            <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b></div>
+        <div style="text-align: center; margin-bottom: 10px;">
+            <img src="https://raw.githubusercontent.com/juventiuswahyu/asisten-dosen-v2/main/logo.png" 
+                 width="130" 
+                 style="filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.5));"
+                 onerror="this.style.display='none'">
         </div>
     """,
         unsafe_allow_html=True,
     )
+
+st.markdown(
+    """
+        <div class="hero-title">Student Business Simulator</div>
+        <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b></div>
+    </div>
+""",
+    unsafe_allow_html=True,
+)
 
 api_key = st.secrets.get("GROQ_API_KEY")
 
 
-# Fungsi Simpan ke Google Sheets (Diperbarui dengan No HP)
+# Fungsi Simpan ke Google Sheets (Termasuk No HP)
 def save_to_google_sheets(
     nama, no_hp, sekolah, nama_bisnis, kategori, deskripsi, hasil
 ):
@@ -136,7 +131,6 @@ def save_to_google_sheets(
         sheet = client.open("Data Leads Business Simulator").sheet1
 
         waktu = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        # Menambahkan kolom No HP ke database
         row = [
             waktu,
             nama,
@@ -203,7 +197,10 @@ with st.form("business_form"):
 # Proses AI
 if submit_btn:
     if not nama or not no_hp or not nama_bisnis or not deskripsi:
-        st.warning("⚠️ Mohon lengkapi Nama, No. WhatsApp, Nama Bisnis, dan Penjelasan Ide Bisnis dulu ya!")
+        st.warning(
+            "⚠️ Mohon lengkapi Nama, No. WhatsApp, Nama Bisnis, dan Penjelasan"
+            " Ide Bisnis dulu ya!"
+        )
     elif not api_key:
         st.error("⚠️ API Key belum terpasang di Streamlit Secrets.")
     else:
@@ -235,7 +232,6 @@ if submit_btn:
                 )
                 res_text = chat_completion.choices[0].message.content
 
-            # Auto-save termasuk No HP
             save_to_google_sheets(
                 nama, no_hp, sekolah, nama_bisnis, kategori, deskripsi, res_text
             )

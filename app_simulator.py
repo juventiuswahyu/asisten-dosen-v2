@@ -168,12 +168,28 @@ if submit_btn:
         st.error("⚠️ API Key belum terpasang di Streamlit Secrets.")
     else:
         # Prompt Sangat Ringkas & Padat
-        prompt = f"""
-        Kamu Dosen Pakar Manajemen. Analisis ide bisnis dari {nama} ({sekolah}).
-        Bisnis: {nama_bisnis} ({kategori}).
-        Deskripsi: {deskripsi}
+       prompt = f"""
+Kamu Dosen Pakar Manajemen. Analisis ide bisnis dari {nama} ({sekolah}).
+Bisnis: {nama_bisnis} ({kategori}).
+Deskripsi: {deskripsi}
 
-        Aturan: Berikan jawaban SINGKAT, PADAT, Maksimal 1-2 kalimat per poin!
+PENTING: Jawab SINGKAT, PADAT, Maksimal 1 kalimat per poin agar jawaban lengkap!
+
+🎯 **Skor Potensi**: [Nilai 60-95] - [1 kalimat kesimpulan]
+
+📌 **Rekomendasi STP**:
+- **Segmenting**: [1 kalimat ringkas]
+- **Targeting**: [1 kalimat ringkas]
+- **Positioning**: [1 kalimat ringkas]
+
+🛍️ **Bauran Pemasaran (4P)**:
+- **Product**: [1 saran ringkas]
+- **Price**: [1 saran ringkas]
+- **Place**: [1 saran ringkas]
+- **Promotion**: [1 ide promosi sosmed]
+
+🎓 **Pesan Motivasi**: [1 kalimat singkat ajakan gabung Prodi Manajemen]
+"""
 
         🎯 **Skor Potensi**: [Nilai 60-95] - [1 kalimat kesimpulan]
 

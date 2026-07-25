@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# 2. Custom CSS UI
+# 2. Custom CSS UI (Hanya untuk Styling Elemen Bawaan)
 st.markdown(
     """
     <style>
@@ -22,26 +22,17 @@ st.markdown(
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    .hero-container {
+    /* Style untuk Banner Utama */
+    [data-testid="stVerticalBlock"] > div:has(div.banner-marker) {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-        padding: 2rem 1.5rem;
+        padding: 2rem 1rem;
         border-radius: 20px;
-        color: white;
         text-align: center;
-        margin-bottom: 2rem;
         box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        margin-bottom: 2rem;
     }
-    .hero-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        margin-top: 0.5rem;
-        margin-bottom: 0.5rem;
-        background: linear-gradient(90deg, #38bdf8, #818cf8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    .hero-subtitle { font-size: 1rem; opacity: 0.9; }
-
+    
+    /* Style Kartu Hasil Analisis */
     .eval-card {
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
@@ -51,6 +42,7 @@ st.markdown(
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     }
     
+    /* Style Box CTA */
     .cta-box {
         background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
         border: 2px dashed #2563eb;
@@ -83,37 +75,48 @@ if "response" not in st.session_state:
 if "user_data" not in st.session_state:
     st.session_state.user_data = {}
 
-# Header Hero Banner dengan Tampilan Bersih
-st.markdown('<div class="hero-container">', unsafe_allow_html=True)
-
-# Tampilkan gambar logo/maskot dengan st.image jika ada file lokal, atau fallback emoji gagah
-if os.path.exists("logo.png"):
-    col_a, col_b, col_c = st.columns([1, 1, 1])
-    with col_b:
-        st.image("logo.png", width=120)
-elif os.path.exists("logo.jpg"):
-    col_a, col_b, col_c = st.columns([1, 1, 1])
-    with col_b:
-        st.image("logo.jpg", width=120)
-else:
+# --- HEADER HERO BANNER (100% Streamlit Native) ---
+banner_container = st.container()
+with banner_container:
+    # Marker penanda untuk CSS
     st.markdown(
-        '<div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🦅</div>',
+        '<div class="banner-marker" style="display:none;"></div>',
         unsafe_allow_html=True,
     )
 
-st.markdown(
-    """
-        <div class="hero-title">Student Business Simulator</div>
-        <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b></div>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
+    # Menampilkan Logo/Gambar
+    if os.path.exists("logo.png"):
+        col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
+        with col_l2:
+            st.image("logo.png", width=120)
+    elif os.path.exists("logo.jpg"):
+        col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
+        with col_l2:
+            st.image("logo.jpg", width=120)
+    else:
+        st.markdown(
+            '<div style="text-align:center; font-size: 3.5rem;'
+            ' margin-bottom:-10px;">🦅</div>',
+            unsafe_allow_html=True,
+        )
+
+    # Judul & Subtitle
+    st.markdown(
+        """
+        <h1 style="color: #38bdf8; text-align: center; font-weight: 800; font-size: 2.2rem; margin-top: 10px; margin-bottom: 5px;">
+            Student Business Simulator
+        </h1>
+        <p style="color: #f8fafc; text-align: center; font-size: 1rem; opacity: 0.95; margin-bottom: 0;">
+            Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b>
+        </p>
+    """,
+        unsafe_allow_html=True,
+    )
 
 api_key = st.secrets.get("GROQ_API_KEY")
 
 
-# Fungsi Simpan ke Google Sheets
+# Fungsi Simpan ke Google Sheets (Termasuk No HP)
 def save_to_google_sheets(
     nama, no_hp, sekolah, nama_bisnis, kategori, deskripsi, hasil
 ):

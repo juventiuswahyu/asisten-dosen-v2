@@ -24,7 +24,7 @@ st.markdown(
 
     .hero-container {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-        padding: 2.5rem 1.5rem;
+        padding: 2rem 1.5rem;
         border-radius: 20px;
         color: white;
         text-align: center;
@@ -34,7 +34,7 @@ st.markdown(
     .hero-title {
         font-size: 2.2rem;
         font-weight: 800;
-        margin-top: 0.8rem;
+        margin-top: 0.5rem;
         margin-bottom: 0.5rem;
         background: linear-gradient(90deg, #38bdf8, #818cf8);
         -webkit-background-clip: text;
@@ -83,19 +83,26 @@ if "response" not in st.session_state:
 if "user_data" not in st.session_state:
     st.session_state.user_data = {}
 
-# Gambar Maskot Gagak (Base64 Embed)
-MASCOT_IMG = "https://i.ibb.co.com/84NfGTh/raven.png" 
+# Header Hero Banner dengan Tampilan Bersih
+st.markdown('<div class="hero-container">', unsafe_allow_html=True)
 
-# Header Hero Banner
+# Tampilkan gambar logo/maskot dengan st.image jika ada file lokal, atau fallback emoji gagah
+if os.path.exists("logo.png"):
+    col_a, col_b, col_c = st.columns([1, 1, 1])
+    with col_b:
+        st.image("logo.png", width=120)
+elif os.path.exists("logo.jpg"):
+    col_a, col_b, col_c = st.columns([1, 1, 1])
+    with col_b:
+        st.image("logo.jpg", width=120)
+else:
+    st.markdown(
+        '<div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🦅</div>',
+        unsafe_allow_html=True,
+    )
+
 st.markdown(
-    f"""
-    <div class="hero-container">
-        <div style="text-align: center;">
-            <img src="https://images.squarespace-cdn.com/content/v1/606c9a3a94158d626e2e50cf/1618239082914-7T3Q0V853O62Z2V59J9O/raven.png" 
-                 width="110" 
-                 style="filter: drop-shadow(0px 4px 12px rgba(0,0,0,0.5)); border-radius: 10px;"
-                 onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3069/3069172.png';">
-        </div>
+    """
         <div class="hero-title">Student Business Simulator</div>
         <div class="hero-subtitle">Uji & Evaluasi Ide Bisnismu Bersama AI Konsultan dari <b>Prodi Manajemen</b></div>
     </div>
